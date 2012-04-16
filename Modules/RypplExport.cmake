@@ -40,6 +40,11 @@
 # http://www.boost.org/LICENSE_1_0.txt                                   #
 ##########################################################################
 
+if(__RypplExport_INCLUDED)
+  return()
+endif()
+set(__RypplExport_INCLUDED True)
+
 include(CMakeParseArguments)
 
 # Export of projects
