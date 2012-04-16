@@ -3,9 +3,14 @@ if(__RYPPL_INCLUDED)
 endif()
 set(__RYPPL_INCLUDED TRUE)
 
-function(find_package package)
+function(find_package)
   _find_package(${ARGV})
-  set(${package}_USE_FILE ${${package}_USE_FILE} PARENT_SCOPE)
+
+  get_cmake_property(variables VARIABLES)
+  foreach(variable ${variables})
+    set(${variable} ${${variable}} PARENT_SCOPE)
+  endforeach()
+
   get_directory_property(find_package_args RYPPL_FIND_PACKAGE_ARGS)
 
   if (find_package_args)
