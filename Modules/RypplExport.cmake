@@ -1,3 +1,10 @@
+# ryppl_export([TARGETS [targets...] ]
+#              [VERSION version]
+#              [DEPENDS [components...] ]
+#              [INCLUDE_DIRECTORIES [dirs...] ]
+#              [DEFINITIONS [compile_flags...] ]
+#              [CODE [lines...] ])
+#              
 ##########################################################################
 # Copyright (C) 2011-2012 Daniel Pfeifer <daniel@pfeifer-mail.de>        #
 #                                                                        #
