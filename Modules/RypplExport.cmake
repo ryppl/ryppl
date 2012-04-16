@@ -76,7 +76,6 @@ function(ryppl_export)
   # Each dependency contributes its own dependencies, include directories, etc.
   foreach(depends ${EXPORT_DEPENDS})
     string(FIND ${depends} " " index)
-    message(STATUS "found space in ${depends} at ${index}")
     string(SUBSTRING ${depends} 0 ${index} name)
     set(_find_package "${_find_package}find_package(${depends})\n")
     set(_definitions "${_definitions}\${${name}_DEFINITIONS}\n ")
