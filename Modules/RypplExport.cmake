@@ -9,7 +9,8 @@
 # their usage requirements into a <packagename>Config.cmake file that
 # can be found and used by CMake's find_package().  It also calls
 # install() to generate installation instructions for -dev, -bin, and
-# -dbg packages.
+# -dbg packages, and registers the exported package in the CMake
+# package registry.
 #
 # TARGETS names the CMake targets that are part of the package being
 # exported.
