@@ -31,7 +31,7 @@ endif(NOT TARGET test)
 #     )
 #
 function(ryppl_test_suite)
-  if(BOOST_DISABLE_TESTS)
+  if(RYPPL_DISABLE_TESTS)
     return()
   endif()
 
