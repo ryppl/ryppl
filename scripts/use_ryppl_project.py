@@ -82,6 +82,8 @@ for root,dirs,files in os.walk(listfile_root):
                 f.write('\n  MAINTAINER ' + ' '.join(authors))
 
                 f.write('\n  CATEGORY Development')
+                f.write('\n  LICENSE "OSI Approved :: Boost Software License 1.0 (BSL-1.0)"')
+                f.write('\n  VERSION 1.50-pre')
 
                 keywords = set()
                 for l in libs:
