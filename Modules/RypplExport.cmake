@@ -194,10 +194,11 @@ function(ryppl_export)
   export(PACKAGE ${PROJECT_NAME})
 
   if(RYPPL_PROJECT_DUMP_FILE)
-    if(NOT RYPPL_PROJECT_DUMP_HEADER_WRITTEN)
+    get_property(dump_header_written GLOBAL PROPERTY RYPPL_PROJECT_DUMP_HEADER_WRITTEN)
+    if(NOT dump_header_written)
       file(WRITE "${RYPPL_PROJECT_DUMP_FILE}" 
         "<?xml version='1.0' ?>\n")
-      set(RYPPL_PROJECT_DUMP_HEADER_WRITTEN True PARENT_SCOPE)
+      set_property(GLOBAL PROPERTY RYPPL_PROJECT_DUMP_HEADER_WRITTEN True)
     endif()
     file(APPEND "${RYPPL_PROJECT_DUMP_FILE}" "<project>\n")
 
