@@ -192,4 +192,43 @@ function(ryppl_export)
     )
 
   export(PACKAGE ${PROJECT_NAME})
+
+  if(RYPPL_PROJECT_DUMP_FILE)
+    if(NOT RYPPL_PROJECT_DUMP_HEADER_WRITTEN)
+      file(WRITE "${RYPPL_PROJECT_DUMP_FILE}" 
+        "<?xml version='1.0' ?>\n")
+      set(RYPPL_PROJECT_DUMP_HEADER_WRITTEN True PARENT_SCOPE)
+    endif()
+    file(APPEND "${RYPPL_PROJECT_DUMP_FILE}" "<project>\n")
+
+    ryppl_xml_dump_text("  " name "${PROJECT_NAME}")
+    get_directory_property(find_package_args RYPPL_FIND_PACKAGE_ARGS)
+    ryppl_xml_dump_list("  " find-package arg ${find_package_args})
+    ryppl_xml_dump_list("  " depends dependency ${EXPORT_DEPENDS})
+    ryppl_xml_dump_list("  " include-directories directory ${EXPORT_INCLUDE_DIRECTORIES})
+    ryppl_xml_dump_list("  " libraries library ${libraries})
+    ryppl_xml_dump_list("  " executables executable ${executable})
+
+    file(APPEND "${RYPPL_PROJECT_DUMP_FILE}" "</project>\n")
+  endif()
+
 endfunction(ryppl_export)
+
+
+function(ryppl_xml_dump_list indent list_tag tag)
+  file(APPEND "${RYPPL_PROJECT_DUMP_FILE}" "${indent}<${list_tag}>\n")
+  foreach(arg ${ARGN})
+    ryppl_xml_dump_text("${indent}  " ${tag} "${arg}")
+  endforeach()
+  file(APPEND "${RYPPL_PROJECT_DUMP_FILE}" "${indent}</${list_tag}>\n")
+endfunction()
+
+function(ryppl_xml_dump_text indent tag text)
+  string(REPLACE "&" "&amp;" text "${text}")
+  string(REPLACE "\"" "&quot;" text "${text}")
+  string(REPLACE "'" "&apos;" text "${text}")
+  string(REPLACE "<" "&lt;" text "${text}")
+  string(REPLACE ">" "&gt;" text "${text}")
+  file(APPEND "${RYPPL_PROJECT_DUMP_FILE}"
+    "${indent}<${tag}>${text}</${tag}>")  
+endfunction(ryppl_xml_dump)
