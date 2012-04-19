@@ -230,5 +230,5 @@ function(ryppl_xml_dump_text indent tag text)
   string(REPLACE "<" "&lt;" text "${text}")
   string(REPLACE ">" "&gt;" text "${text}")
   file(APPEND "${RYPPL_PROJECT_DUMP_FILE}"
-    "${indent}<${tag}>${text}</${tag}>")  
-endfunction(ryppl_xml_dump)
+    "${indent}<${tag}>${text}</${tag}>\n")  
+endfunction(ryppl_xml_dump_text)
