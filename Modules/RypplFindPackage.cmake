@@ -11,7 +11,8 @@ endif()
 set(__RYPPL_FIND_PACKAGE_INCLUDED TRUE)
 
 function(ryppl_do_find_package)
-  set_property(DIRECTORY APPEND PROPERTY RYPPL_FIND_PACKAGE_ARGS "${ARGV}")
+  string(REGEX REPLACE "\;" "\\\;" argument_pack "${ARGV}")
+  set_property(DIRECTORY APPEND PROPERTY RYPPL_FIND_PACKAGE_ARGS "${argument_pack}")
 endfunction(ryppl_do_find_package)
 
 macro(ryppl_find_package)
