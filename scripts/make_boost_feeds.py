@@ -14,6 +14,8 @@ from path import Path
 import boost_metadata
 from uuid import uuid4 as make_uuid
 
+import multiprocessing
+
 def content_length(uri):
     request = urllib2.Request(uri)
     request.get_method = lambda : 'HEAD'
@@ -42,7 +44,16 @@ def get_build_requirements(cmake_dump):
 
     return requirements
 
-def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_metadata):
+def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, site_metadata_file):
+
+    t = ElementTree()
+    t.parse(site_metadata_file)
+    all_libs_metadata = t.getroot().findall('library')
+
+    cmake_dump = ElementTree()
+    cmake_dump.parse(cmake_dump_file)
+    lib_metadata = boost_metadata.lib_metadata(source_subdir, all_libs_metadata)
+
     # os.unlink(feed_file)
     build_requirements = get_build_requirements(cmake_dump)
     srcdir = cmake_dump.findtext('source-directory')
@@ -129,26 +140,33 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
     check_call(['0publish', '--xmlsign', feed_path])
 
 def run(dump_dir, feed_dir, source_root, site_metadata_file):
-    t = ElementTree()
-    t.parse(site_metadata_file)
-    all_libs_metadata = t.getroot().findall('library')
+    p = multiprocessing.Pool()
 
-    for cmake_dump_file in glob.glob(os.path.join(dump_dir,'*.xml')):
-        
-        camel_name = Path(cmake_dump_file).namebase
-        cmake_dump = ElementTree()
-        cmake_dump.parse(cmake_dump_file)
 
-        source_subdir = cmake_dump.findtext('source-directory') - source_root
-        lib_metadata = boost_metadata.lib_metadata(source_subdir, all_libs_metadata)
+    try:
+        for cmake_dump_file in glob.glob(os.path.join(dump_dir,'*.xml')):
 
-        write_feed(cmake_dump, feed_dir, source_subdir, camel_name, 'dev', lib_metadata)
+            cmake_dump = ElementTree()
+            cmake_dump.parse(cmake_dump_file)
+            camel_name = Path(cmake_dump_file).namebase
 
-        if cmake_dump.findall('libraries/library'):
-            write_feed(cmake_dump, feed_dir, source_subdir, camel_name, 'bin', lib_metadata)
+            source_subdir = cmake_dump.findtext('source-directory') - source_root
 
-        write_feed(cmake_dump, feed_dir, source_subdir, camel_name, 'dbg', lib_metadata)
-        
+            p.apply_async(
+                write_feed, (cmake_dump_file, feed_dir, source_subdir, camel_name, 'dev', site_metadata_file))
+
+            if cmake_dump.findall('libraries/library'):
+                p.apply_async(
+                    write_feed, (cmake_dump_file, feed_dir, source_subdir, camel_name, 'bin', site_metadata_file))
+
+            p.apply_async(
+                write_feed, (cmake_dump_file, feed_dir, source_subdir, camel_name, 'dbg', site_metadata_file))
+    except:
+        p.terminate()
+        raise
+    else:
+        p.close()
+        p.join()
 
 if __name__ == '__main__':
     argv = sys.argv
