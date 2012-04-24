@@ -139,7 +139,7 @@ def run(dump_dir, feed_dir, source_root, site_metadata_file):
 
         write_feed(cmake_dump, feed_dir, source_subdir, camel_name, 'dev', lib_metadata)
 
-        if (cmake_dump.find('libraries/library')):
+        if cmake_dump.findall('libraries/library'):
             write_feed(cmake_dump, feed_dir, source_subdir, camel_name, 'bin', lib_metadata)
 
         write_feed(cmake_dump, feed_dir, source_subdir, camel_name, 'dbg', lib_metadata)
