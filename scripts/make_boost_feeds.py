@@ -30,7 +30,7 @@ def get_build_requirements(cmake_dump):
         args = fp.findall('arg')
         if args[0].text == 'Boost' and args[1].text == 'COMPONENTS' and args[-1].text == 'NO_MODULE':
             for a in args[2:-1]:
-                feed_base = ''.join(x.capitalize() for x in a.text.split('_'))
+                feed_base = ''.join(('IO' if x == 'io' else x.capitalize()) for x in a.text.split('_'))
                 
                 requirements.append(
                     ( 'http://ryppl.github.com/feeds/boost/%s-dev.xml' % feed_base
