@@ -40,7 +40,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib
         _.name[feed_name_base],
         ]
 
-    for tag in 'summary','homepage','author','description','category':
+    for tag in 'summary','homepage','dc:author','description','category':
         iface <<= lib_metadata.findall(tag)
 
     print 20*'#' + ' ' + source_subdir + ' ' + 20*'#'
