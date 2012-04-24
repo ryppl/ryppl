@@ -40,7 +40,7 @@ def lib_metadata(source_subdirectory, all_metadata):
         for a in a0:
             authors.add(re.sub(r'\s+', ' ', a))
 
-
+    # Gather up all the distinct categories
     categories = set()
     for l in libs:
         for c in l.findall('category'):
@@ -51,7 +51,7 @@ def lib_metadata(source_subdirectory, all_metadata):
         _.summary[summary],
         _.homepage[homepage],
         [xmlns.dc.author[a] for a in authors],
-        [_.category[c] for c in categories]
+        [_.category(type='http://boost.org/lib-categories')[c] for c in categories]
         ]
 
     if description:
