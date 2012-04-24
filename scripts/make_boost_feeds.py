@@ -126,7 +126,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
     feed_path = feed_dir/feed_name
     dom.xml_document(iface).write(feed_path, encoding='utf-8', xml_declaration=True)
 
-    check_call(['0publish', '-x', feed_path])
+    check_call(['0publish', '--xmlsign', feed_path])
 
 def run(dump_dir, feed_dir, source_root, site_metadata_file):
     t = ElementTree()
