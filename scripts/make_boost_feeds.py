@@ -38,7 +38,7 @@ def get_build_requirements(cmake_dump):
                       )
                     )
         else:
-            print '========>', dom.tostring(fp)
+            warn('Build requirement not encoded:' + dom.tostring(fp))
 
     return requirements
 
