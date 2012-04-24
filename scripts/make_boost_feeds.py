@@ -24,7 +24,7 @@ def content_length(uri):
     else:
         return len(urllib2.urlopen(uri).read())
 
-def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib_metadata):
+def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, component, lib_metadata):
     # os.unlink(feed_file)
     srcdir = cmake_dump.findtext('source-directory')
     lib_name = os.path.basename(srcdir)
@@ -35,7 +35,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib
     # prepare the header of the root element
     _ = dom.dashtag
     iface = _.interface(
-        uri='http://ryppl.github.com/feeds/boost/%s-%s.xml' % (feed_name_base,variant)
+        uri='http://ryppl.github.com/feeds/boost/%s-%s.xml' % (feed_name_base,component)
       , xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
       , **{ 
             'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
@@ -79,10 +79,10 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib
                 cmake('-E copy_directory ${SRCDIR} ./source'), semi
               , cmake('-E copy_directory ${BOOST_CMAKELISTS_DIR}/%s ./source' % source_subdir), semi
               , cmake('./source' +  # configure
-                      {'dbg':'-DBUILD_TYPE=Debug ', 'bin':'-DBUILD_TYPE=Release '}.get(variant,'')
+                      {'dbg':'-DBUILD_TYPE=Debug ', 'bin':'-DBUILD_TYPE=Release '}.get(component,'')
                       ), semi
-              , cmake('--build .' + (' --target documentation' if variant == 'doc' else '')), semi
-              , cmake('-DCOMPONENT=%s -DCMAKE_INSTALL_PREFIX=${DISTDIR} -P cmake_install.cmake' % variant)
+              , cmake('--build .' + (' --target documentation' if component == 'doc' else '')), semi
+              , cmake('-DCOMPONENT=%s -DCMAKE_INSTALL_PREFIX=${DISTDIR} -P cmake_install.cmake' % component)
             ]
           , _.requires(interface='http://ryppl.github.com/feeds/boost/cmakelists.xml')[
                 _.environment(insert='.', mode='replace', name='BOOST_CMAKELISTS_DIR')
