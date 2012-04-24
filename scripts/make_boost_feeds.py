@@ -23,40 +23,11 @@ def content_length(uri):
     else:
         return len(urllib2.urlopen(uri).read())
 
-def archive_info(source_directory):
-    
-    git_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=srcdir).strip()
-
-    remote_uri = check_output(['git', 'remote', '-v']).split()[1]
-    github_repo = remote_uri.split('github.com', 1)[1][1:]
-    if github_repo.endswith('.git'):
-        github_repo = remote_path[:-4]
-
-    return dict(revision=git_revision, github_repo=github_repo)
-
 def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib_metadata):
     # os.unlink(feed_file)
     srcdir = cmake_dump.findtext('source-directory')
     lib_name = os.path.basename(srcdir)
     lib_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=srcdir).strip()
-    
-#    archive_url = 'http://nodeload.github.com/boost-lib/' + lib_name + '/zipball/' + revision
-#    archive_file = tempfile.NamedTemporaryFile(suffix='.zip')
-#    archive_file.write(urllib2.urlopen(archive_url).read())
-
-    if 0:
-        _0publish([
-        '--set-version=1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
-#      , '--archive-url=' + archive_url
-#      , '--archive-file=' + archive_file.name
-#      , '--set-released=' + date.today().isoformat()
-#      , '--archive-extract=boost-lib-' + lib_name + revision[:7]
-      , '--create'
-      , '--set-interface-uri=http://ryppl.github.com/feeds/boost/' + os.path.basename(feed_file)
-      , '--set-arch=*-src'
-      , '--set-stability=testing'
-      , feed_file
-        ])
 
     _ = dom.dashtag
     iface = _.interface(
