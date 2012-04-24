@@ -50,21 +50,19 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib
 
     archive_uri = 'http://nodeload.github.com/boost-lib/' + source_subdir + '/zipball/' + lib_revision
 
+    cmake = lambda s: [
+        _.arg[x] for x in 
+        ['http://afb.users.sourceforge.net/zero-install/interfaces/cmake.xml'] + s.split()
+        ]
+    
+    semi = _.arg[';']
+
     iface <<= _.group(license='OSI Approved :: Boost Software License 1.0 (BSL-1.0)')[
         _.implementation(arch='*-src'
                           , id=str(make_uuid())
                           , released=date.today().isoformat()
                           , stability='testing'
                           , version=version
-                          , # A workaround for a soon-to-disappear
-                            # interaction between 0install and CMake
-                            # where the '=' signs in path names cause
-                            # trouble.  CMake has removed the
-                            # limitation upstream and the zeroinstall
-                            # guys are looking at new directory
-                            # naming.  Of course, the build command
-                            # needs to be edited once this goes away.
-                            **{'compile:dup-src':'true'}
                             )
            [
                _.archive(extract='boost-lib-' + source_subdir + '-' + lib_revision[:7]
@@ -72,7 +70,23 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib
                        , size=str(content_length(archive_uri))
                        , type='application/zip')
                ]
+      , _.command(name='compile')
+        [
+            _.runner(interface='http://ryppl.github.com/feeds/ryppl/0runner.xml')
+            [
+                cmake('-E copy_directory ${SRCDIR} ./source'), semi
+              , cmake('-E copy_directory ${BOOST_CMAKELISTS_DIR}/%s ./source' % source_subdir), semi
+              , cmake('./source' +  # configure
+                      {'dbg':'-DBUILD_TYPE=Debug ', 'bin':'-DBUILD_TYPE=Release '}.get(variant,'')
+                      ), semi
+              , cmake('--build .' + (' --target documentation' if variant == 'doc' else '')), semi
+              , cmake('-DCOMPONENT=%s -DCMAKE_INSTALL_PREFIX=${DISTDIR} -P cmake_install.cmake' % variant)
+            ]
+          , _.requires(interface='http://ryppl.github.com/feeds/boost/cmakelists.xml')[
+                _.environment(insert='.', mode='replace', name='BOOST_CMAKELISTS_DIR')
+            ]
         ]
+    ]
     
     print 20*'#' + ' ' + source_subdir + ' ' + 20*'#'
     print iface
