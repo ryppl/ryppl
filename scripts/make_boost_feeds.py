@@ -67,7 +67,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib
                             **{'compile:dup-src':'true'}
                             )
            [
-               _.archive(extract='boost-lib-' + source_subdir + '-' + lib_revision[0:7]
+               _.archive(extract='boost-lib-' + source_subdir + '-' + lib_revision[:7]
                        , href=archive_uri
                        , size=str(content_length(archive_uri))
                        , type='application/zip')
