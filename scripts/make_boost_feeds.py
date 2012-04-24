@@ -54,10 +54,12 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
     assert camel_name.startswith('Boost')
     feed_name_base = camel_name[len('Boost'):]
 
+    suffix = '-%s'%component if component != 'bin' else ''
+
     # prepare the header of the root element
     _ = dom.dashtag
     iface = _.interface(
-        uri='http://ryppl.github.com/feeds/boost/%s-%s.xml' % (feed_name_base,component)
+        uri='http://ryppl.github.com/feeds/boost/%s%s.xml' % (feed_name_base, suffix)
       , xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
       , **{ 
             'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
