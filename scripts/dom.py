@@ -97,6 +97,9 @@ class tag(object):
     def element(self):
         return self.__element
 
+    def indent(self):
+        indent(self.element)
+
 class dashmetatag(metatag):
     def __getattr__(self, name):
         return tag(name.replace('_','-'))

@@ -115,9 +115,13 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
                 for uri,var in build_requirements ]
         ]
     ]
-    
-    print 20*'#' + ' ' + source_subdir + ' ' + 20*'#'
-    print iface
+
+    iface.indent()
+
+    dom.xml_document(iface).write(
+        open(feed_dir/feed_name,'w')
+      , encoding='utf-8'
+      , xml_declaration=True)
 
 def run(dump_dir, feed_dir, source_root, site_metadata_file):
     t = ElementTree()
