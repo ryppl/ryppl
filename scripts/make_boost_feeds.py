@@ -32,11 +32,11 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib
 
     _ = dom.dashtag
     iface = _.interface(
-        uri='http://ryppl.github.com/feeds/boost/%s-%s.xml' % (feed_name_base,variant),
-        xmlns='http://zero-install.sourceforge.net/2004/injector/interface',
-        **{ 
-            'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile',
-            'xmlns:dc':'http://purl.org/dc/elements/1.1/'
+        uri='http://ryppl.github.com/feeds/boost/%s-%s.xml' % (feed_name_base,variant)
+      , xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
+      , **{ 
+            'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
+          , 'xmlns:dc':'http://purl.org/dc/elements/1.1/'
             })[
         _.name[feed_name_base]
       , _.icon(href="http://svn.boost.org/svn/boost/website/public_html/live/gfx/boost-dark-trans.png" 
@@ -46,7 +46,6 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib
     for tag in 'summary','homepage','dc:author','description','category':
         iface <<= lib_metadata.findall(tag)
 
-    print 20*'#' + ' ' + source_subdir + ' ' + 20*'#'
     version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
 
     archive_uri = 'http://nodeload.github.com/boost-lib/' + source_subdir + '/zipball/' + lib_revision
@@ -75,6 +74,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib
                ]
         ]
     
+    print 20*'#' + ' ' + source_subdir + ' ' + 20*'#'
     print iface
 
 def run(dump_dir, feed_dir, source_root, site_metadata_file):
@@ -104,8 +104,8 @@ if __name__ == '__main__':
     feeds = ryppl / 'feeds'
     lib_db_default = '/Users/dave/src/boost/svn/website/public_html/live/doc/libraries.xml'
 
-    run(dump_dir=Path(argv[1] if len(argv) > 1 else feeds/'dumps'),
-        feed_dir=Path(argv[2] if len(argv) > 2 else feeds/'boost'),
-        source_root=Path(argv[3] if len(argv) > 3 else ryppl/'boost-zero'/'boost'),
-        site_metadata_file=Path(argv[4] if len(argv) > 4 else lib_db_default)
+    run(dump_dir=Path(argv[1] if len(argv) > 1 else feeds/'dumps')
+      , feed_dir=Path(argv[2] if len(argv) > 2 else feeds/'boost')
+      , source_root=Path(argv[3] if len(argv) > 3 else ryppl/'boost-zero'/'boost')
+      , site_metadata_file=Path(argv[4] if len(argv) > 4 else lib_db_default)
         )
