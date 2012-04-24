@@ -30,6 +30,9 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib
     lib_name = os.path.basename(srcdir)
     lib_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=srcdir).strip()
 
+    version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
+
+    # prepare the header of the root element
     _ = dom.dashtag
     iface = _.interface(
         uri='http://ryppl.github.com/feeds/boost/%s-%s.xml' % (feed_name_base,variant)
@@ -43,10 +46,9 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib
              , type="image/png")
       ]
 
+    # These tags can be dragged directly across from our lib_metadata
     for tag in 'summary','homepage','dc:author','description','category':
         iface <<= lib_metadata.findall(tag)
-
-    version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
 
     archive_uri = 'http://nodeload.github.com/boost-lib/' + source_subdir + '/zipball/' + lib_revision
 
