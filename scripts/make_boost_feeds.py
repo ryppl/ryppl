@@ -42,7 +42,7 @@ def get_build_requirements(cmake_dump):
 
     return requirements
 
-def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, component, lib_metadata):
+def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_metadata):
     # os.unlink(feed_file)
     build_requirements = get_build_requirements(cmake_dump)
     srcdir = cmake_dump.findtext('source-directory')
@@ -50,6 +50,9 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, component, l
     lib_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=srcdir).strip()
 
     version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
+
+    assert camel_name.startswith('Boost')
+    feed_name_base = camel_name[len('Boost'):]
 
     # prepare the header of the root element
     _ = dom.dashtag
@@ -60,7 +63,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, component, l
             'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
           , 'xmlns:dc':'http://purl.org/dc/elements/1.1/'
             })[
-        _.name[feed_name_base]
+        _.name[camel_name]
       , _.icon(href="http://svn.boost.org/svn/boost/website/public_html/live/gfx/boost-dark-trans.png" 
              , type="image/png")
       ]
@@ -99,7 +102,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, component, l
                       + ''.join(' -D%s=%s'%(var,var) for uri,var in build_requirements)), semi
               , cmake('-E copy_directory ${BOOST_CMAKELISTS_DIR}/%s ./source' % source_subdir), semi
               , cmake('./source' +  # configure
-                      {'dbg':'-DBUILD_TYPE=Debug ', 'bin':'-DBUILD_TYPE=Release '}.get(component,'')
+                      {'dbg':' -DBUILD_TYPE=Debug ', 'bin':' -DBUILD_TYPE=Release '}.get(component,'')
                       ), semi
               , cmake('--build .' + (' --target documentation' if component == 'doc' else '')), semi
               , cmake('-DCOMPONENT=%s -DCMAKE_INSTALL_PREFIX=${DISTDIR} -P cmake_install.cmake' % component)
@@ -122,17 +125,17 @@ def run(dump_dir, feed_dir, source_root, site_metadata_file):
 
     for cmake_dump_file in glob.glob(os.path.join(dump_dir,'*.xml')):
         
-        feed_name_base = Path(cmake_dump_file).namebase
+        camel_name = Path(cmake_dump_file).namebase
         cmake_dump = ElementTree()
         cmake_dump.parse(cmake_dump_file)
 
         source_subdir = cmake_dump.findtext('source-directory') - source_root
         lib_metadata = boost_metadata.lib_metadata(source_subdir, all_libs_metadata)
 
-        write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, 'dev', lib_metadata)
+        write_feed(cmake_dump, feed_dir, source_subdir, camel_name, 'dev', lib_metadata)
 
         if (cmake_dump.find('libraries/library')):
-            write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, 'bin', lib_metadata)
+            write_feed(cmake_dump, feed_dir, source_subdir, camel_name, 'bin', lib_metadata)
 
 
 if __name__ == '__main__':
