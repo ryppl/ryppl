@@ -108,7 +108,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
               , cmake('--build .' + (' --target documentation' if component == 'doc' else '')), semi
               , cmake('-DCOMPONENT=%s -DCMAKE_INSTALL_PREFIX=${DISTDIR} -P cmake_install.cmake' % component)
             ]
-          , _.requires(interface='http://ryppl.github.com/feeds/boost/cmakelists.xml')[
+          , _.requires(interface='http://ryppl.github.com/feeds/boost/CMakeLists.xml')[
                 _.environment(insert='.', mode='replace', name='BOOST_CMAKELISTS_DIR')
             ]
           , [  _.requires(interface=uri)[ _.environment(insert='.', mode='replace', name=var) ]
