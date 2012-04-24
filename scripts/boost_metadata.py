@@ -24,7 +24,7 @@ def lib_metadata(source_subdirectory, all_metadata):
 
     summary = '***WRITE ME (one line)***'
     homepage = 'http://www.boost.org'
-    if rootlib:
+    if not rootlib is None:
         homepage = rootlib.findtext('documentation')
         summary = re.sub(r'\s+', ' ', rootlib.findtext('description'))
 
