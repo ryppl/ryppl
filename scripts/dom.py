@@ -59,6 +59,9 @@ class tag(object):
         self._flatten_append(self.element, x)
         return self
         
+    def __getattr__(self, attr):
+        return getattr(self.element, attr)
+
     @staticmethod
     def _flatten_append(l, x):
         if isinstance(x, tag):
