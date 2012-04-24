@@ -82,6 +82,13 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
     
     semi = _.arg[';']
 
+    archive_subdir = 'boost-lib-' + source_subdir + '-' + lib_revision[:7]
+    archive = tempfile.NamedTemporaryFile(suffix='.zip')
+    archive_contents = urllib2.urlopen(archive_uri).read()
+    archive.write(archive_contents)
+    archive.flush()
+    digest = check_output(['0install', 'digest', '--algorithm=sha1new', archive.name, archive_subdir]).strip().split('=')[1]
+
     iface <<= _.group(license='OSI Approved :: Boost Software License 1.0 (BSL-1.0)')[
         _.implementation(arch='*-src'
                           , id=str(make_uuid())
@@ -89,12 +96,10 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
                           , stability='testing'
                           , version=version
                             )
-           [
-               _.archive(extract='boost-lib-' + source_subdir + '-' + lib_revision[:7]
-                       , href=archive_uri
-                       , size=str(content_length(archive_uri))
-                       , type='application/zip')
-               ]
+        [
+            _.archive(extract=archive_subdir, href=archive_uri, size=str(len(archive_contents)), type='application/zip')
+          , _.manifest_digest(sha1new=digest)
+        ]
       , _.command(name='compile')
         [
             _.runner(interface='http://ryppl.github.com/feeds/ryppl/0runner.xml')
