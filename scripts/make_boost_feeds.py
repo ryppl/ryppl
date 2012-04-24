@@ -137,6 +137,8 @@ def run(dump_dir, feed_dir, source_root, site_metadata_file):
         if (cmake_dump.find('libraries/library')):
             write_feed(cmake_dump, feed_dir, source_subdir, camel_name, 'bin', lib_metadata)
 
+        write_feed(cmake_dump, feed_dir, source_subdir, camel_name, 'dbg', lib_metadata)
+        
 
 if __name__ == '__main__':
     argv = sys.argv
