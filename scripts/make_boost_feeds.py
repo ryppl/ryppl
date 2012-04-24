@@ -24,8 +24,27 @@ def content_length(uri):
     else:
         return len(urllib2.urlopen(uri).read())
 
+def get_build_requirements(cmake_dump):
+    requirements = []
+    for fp in cmake_dump.findall('find-package'):
+        args = fp.findall('arg')
+        if args[0].text == 'Boost' and args[1].text == 'COMPONENTS' and args[-1].text == 'NO_MODULE':
+            for a in args[2:-1]:
+                feed_base = ''.join(x.capitalize() for x in a.text.split('_'))
+                
+                requirements.append(
+                    ( 'http://ryppl.github.com/feeds/boost/%s-dev.xml' % feed_base
+                      , 'Boost%s_DIR' % feed_base
+                      )
+                    )
+        else:
+            print '========>', dom.tostring(fp)
+
+    return requirements
+
 def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, component, lib_metadata):
     # os.unlink(feed_file)
+    build_requirements = get_build_requirements(cmake_dump)
     srcdir = cmake_dump.findtext('source-directory')
     lib_name = os.path.basename(srcdir)
     lib_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=srcdir).strip()
@@ -76,7 +95,8 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, component, l
         [
             _.runner(interface='http://ryppl.github.com/feeds/ryppl/0runner.xml')
             [
-                cmake('-E copy_directory ${SRCDIR} ./source'), semi
+                cmake('-E copy_directory ${SRCDIR} ./source'
+                      + ''.join(' -D%s=%s'%(var,var) for uri,var in build_requirements)), semi
               , cmake('-E copy_directory ${BOOST_CMAKELISTS_DIR}/%s ./source' % source_subdir), semi
               , cmake('./source' +  # configure
                       {'dbg':'-DBUILD_TYPE=Debug ', 'bin':'-DBUILD_TYPE=Release '}.get(component,'')
@@ -87,6 +107,8 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, component, l
           , _.requires(interface='http://ryppl.github.com/feeds/boost/cmakelists.xml')[
                 _.environment(insert='.', mode='replace', name='BOOST_CMAKELISTS_DIR')
             ]
+          , [  _.requires(interface=uri)[ _.environment(insert='.', mode='replace', name=var) ]
+                for uri,var in build_requirements ]
         ]
     ]
     
