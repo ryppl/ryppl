@@ -37,8 +37,10 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib
             'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile',
             'xmlns:dc':'http://purl.org/dc/elements/1.1/'
             })[
-        _.name[feed_name_base],
-        ]
+        _.name[feed_name_base]
+      , _.icon(href="http://svn.boost.org/svn/boost/website/public_html/live/gfx/boost-dark-trans.png" 
+             , type="image/png")
+      ]
 
     for tag in 'summary','homepage','dc:author','description','category':
         iface <<= lib_metadata.findall(tag)
