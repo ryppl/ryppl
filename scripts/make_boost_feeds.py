@@ -7,7 +7,7 @@
 import glob, re, os, sys, shutil, tempfile, urllib2
 from datetime import date, datetime
 from warnings import warn
-from subprocess import check_output, Popen, PIPE
+from subprocess import check_output, check_call, Popen, PIPE
 from xml.etree.cElementTree import ElementTree
 import dom, path
 from path import Path
@@ -118,10 +118,10 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
 
     iface.indent()
 
-    dom.xml_document(iface).write(
-        open(feed_dir/feed_name,'w')
-      , encoding='utf-8'
-      , xml_declaration=True)
+    feed_path = feed_dir/feed_name
+    dom.xml_document(iface).write(feed_path, encoding='utf-8', xml_declaration=True)
+
+    check_call(['0publish', '-x', feed_path])
 
 def run(dump_dir, feed_dir, source_root, site_metadata_file):
     t = ElementTree()
