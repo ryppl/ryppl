@@ -12,6 +12,7 @@ from xml.etree.cElementTree import ElementTree
 import dom, path
 from path import Path
 import boost_metadata
+from uuid import uuid4 as make_uuid
 
 def content_length(uri):
     request = urllib2.Request(uri)
@@ -46,6 +47,34 @@ def write_feed(cmake_dump, feed_dir, source_subdir, feed_name_base, variant, lib
         iface <<= lib_metadata.findall(tag)
 
     print 20*'#' + ' ' + source_subdir + ' ' + 20*'#'
+    version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
+
+    archive_uri = 'http://nodeload.github.com/boost-lib/' + source_subdir + '/zipball/' + lib_revision
+
+    iface <<= _.group(license='OSI Approved :: Boost Software License 1.0 (BSL-1.0)')[
+        _.implementation(arch='*-src'
+                          , id=str(make_uuid())
+                          , released=date.today().isoformat()
+                          , stability='testing'
+                          , version=version
+                          , # A workaround for a soon-to-disappear
+                            # interaction between 0install and CMake
+                            # where the '=' signs in path names cause
+                            # trouble.  CMake has removed the
+                            # limitation upstream and the zeroinstall
+                            # guys are looking at new directory
+                            # naming.  Of course, the build command
+                            # needs to be edited once this goes away.
+                            **{'compile:dup-src':'true'}
+                            )
+           [
+               _.archive(extract='boost-lib-' + source_subdir + '-' + lib_revision[0:7]
+                       , href=archive_uri
+                       , size=str(content_length(archive_uri))
+                       , type='application/zip')
+               ]
+        ]
+    
     print iface
 
 def run(dump_dir, feed_dir, source_root, site_metadata_file):
