@@ -127,6 +127,9 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
           , _.requires(interface='http://ryppl.github.com/feeds/boost/CMakeLists.xml')[
                 _.environment(insert='.', mode='replace', name='BOOST_CMAKELISTS_DIR')
             ]
+          , _.requires(interface='http://ryppl.github.com/feeds/ryppl/CMakeSupport.xml')[
+                _.environment(insert='Modules', mode='prepend', name='CMAKE_MODULE_PATH')
+            ]
           , [  _.requires(interface=uri)[ _.environment(insert='.', mode='replace', name=var) ]
                 for uri,var in build_requirements ]
         ]
