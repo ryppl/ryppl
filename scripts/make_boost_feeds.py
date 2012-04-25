@@ -98,7 +98,7 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
     archive_contents = urllib2.urlopen(archive_uri).read()
     archive.write(archive_contents)
     archive.flush()
-    digest = check_output(['0install', 'digest', '--algorithm=sha1new', archive.name, archive_subdir]).strip().split('=')[1]
+    digest = check_output(['0install', 'digest', '--algorithm=sha256', archive.name, archive_subdir]).strip().split('=')[1]
 
     iface <<= _.group(license='OSI Approved :: Boost Software License 1.0 (BSL-1.0)')[
         _.implementation(arch='*-src'
@@ -109,7 +109,7 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
                             )
         [
             _.archive(extract=archive_subdir, href=archive_uri, size=str(len(archive_contents)), type='application/zip')
-          , _.manifest_digest(sha1new=digest)
+          , _.manifest_digest(sha256=digest)
         ]
       , _.command(name='compile')
         [
