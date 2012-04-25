@@ -118,11 +118,13 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
                 cmake('-E copy_directory ${SRCDIR} ./source'
                       + ''.join(' -D%s=%s'%(var,var) for uri,var in build_requirements)), semi
               , cmake('-E copy_directory ${BOOST_CMAKELISTS_DIR}/%s ./source' % source_subdir), semi
-              , cmake('./source' +  # configure
+              , cmake('-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH} ./source' +  # configure
                       {'dbg':' -DBUILD_TYPE=Debug ', 'bin':' -DBUILD_TYPE=Release '}.get(component,'')
                       ), semi
-              , cmake('--build .' + (' --target documentation' if component == 'doc' else '')), semi
-              , cmake('-DCOMPONENT=%s -DCMAKE_INSTALL_PREFIX=${DISTDIR} -P cmake_install.cmake' % component)
+              , cmake('-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH} --build .' 
+                      + (' --target documentation' if component == 'doc' else '')), semi
+              , cmake('-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH} -DCOMPONENT=%s'
+                      ' -DCMAKE_INSTALL_PREFIX=${DISTDIR} -P cmake_install.cmake' % component)
             ]
           , _.requires(interface='http://ryppl.github.com/feeds/boost/CMakeLists.xml')[
                 _.environment(insert='.', mode='replace', name='BOOST_CMAKELISTS_DIR')
