@@ -22,16 +22,17 @@ def lib_metadata(source_subdirectory, all_metadata):
     # subdirectory, if possible
     rootlib = ([ l for l in libs if l.findtext('key') == source_subdirectory ] + [None])[0]
 
-    summary = '***WRITE ME (one line)***'
-    homepage = 'http://www.boost.org'
+    summary = 'A C++ library from Boost.org'
+    homepage = 'http://www.boost.org/'
     if not rootlib is None:
-        homepage = rootlib.findtext('documentation')
-        summary = re.sub(r'\s+', ' ', rootlib.findtext('description'))
+        homepage += rootlib.findtext('documentation')
 
     # if there's more than one library, we have something for the <description> field.
-    description = None
     if len(libs) > 1:
         description = '\n\n'.join([l.findtext('key') + ':\n' + l.findtext('description') for l in libs])
+    else:
+        description = l.findtext('description')
+    
     
     # Gather up all the distinct author names we can find
     authors = set()
