@@ -30,7 +30,9 @@
 # CODE strings are appended as raw CMake code to the
 # <packagename>Config.cmake file, one per line.
 #
-# VERSION is currently unused
+# If VERSION is given, a basic <package>ConfigVersion.cmake file is
+# created. This file is placed both in the build directory and in the
+# install directory.
 #
 ##########################################################################
 # Copyright (C) 2011-2012 Daniel Pfeifer <daniel@pfeifer-mail.de>        #
@@ -46,6 +48,7 @@ endif()
 set(__RypplExport_INCLUDED True)
 
 include(CMakeParseArguments)
+include(CMakePackageConfigHelpers)
 
 # Export of projects
 function(ryppl_export)
@@ -57,6 +60,20 @@ function(ryppl_export)
     TARGETS
     )
   cmake_parse_arguments(EXPORT "" "VERSION" "${parameters}" ${ARGN})
+
+  if(EXPORT_VERSION)
+    set(_config_version_file
+      "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+      )
+    write_basic_package_version_file("${_config_version_file}"
+      VERSION ${EXPORT_VERSION}
+      COMPATIBILITY SameMajorVersion
+      )
+    install(FILES "${_config_version_file}"
+      DESTINATION .
+      COMPONENT   dev
+      )
+  endif(EXPORT_VERSION)
 
   # Set up variables to hold fragments of the
   # <packagename>Config.cmake file we're generating
