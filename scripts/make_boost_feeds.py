@@ -134,6 +134,9 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
             ]
           , [  _.requires(interface=uri)[ _.environment(insert='.', mode='replace', name=var) ]
                 for uri,var in build_requirements ]
+          , [ dom.xmlns.compile.implementation(arch='*-*') 
+              if component == 'dev' and not cmake_dump.findall('libraries/library')
+              else [] ]
         ]
     ]
 
