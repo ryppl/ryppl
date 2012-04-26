@@ -13,6 +13,7 @@ import dom, path
 from path import Path
 import boost_metadata
 from uuid import uuid4 as make_uuid
+from archive import Archive
 
 import multiprocessing
 
@@ -85,6 +86,7 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
         iface <<= lib_metadata.findall(tag)
 
     archive_uri = 'http://nodeload.github.com/boost-lib/' + source_subdir + '/zipball/' + lib_revision
+    archive = Archive(archive_uri, source_subdir, lib_revision)
 
     cmake = lambda s: [
         _.arg[x] for x in 
@@ -92,13 +94,6 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
         ]
     
     semi = _.arg[';']
-
-    archive_subdir = 'boost-lib-' + source_subdir + '-' + lib_revision[:7]
-    archive = tempfile.NamedTemporaryFile(suffix='.zip')
-    archive_contents = urllib2.urlopen(archive_uri).read()
-    archive.write(archive_contents)
-    archive.flush()
-    digest = check_output(['0install', 'digest', '--algorithm=sha256', archive.name, archive_subdir]).strip().split('=')[1]
 
     iface <<= _.group(license='OSI Approved :: Boost Software License 1.0 (BSL-1.0)')[
         _.implementation(arch='*-src'
@@ -108,8 +103,10 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
                           , version=version
                             )
         [
-            _.archive(extract=archive_subdir, href=archive_uri, size=str(len(archive_contents)), type='application/zip')
-          , _.manifest_digest(sha256=digest)
+            _.archive(
+                extract=archive.subdir, href=archive_uri, 
+                size=str(archive.size), type='application/zip')
+          , _.manifest_digest(sha256=archive.digest)
         ]
       , _.command(name='compile')
         [
