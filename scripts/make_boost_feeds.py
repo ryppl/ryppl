@@ -112,8 +112,7 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
         [
             _.runner(interface='http://ryppl.github.com/feeds/ryppl/0runner.xml')
             [
-                cmake('-E copy_directory ${SRCDIR} ./source'
-                      + ''.join(' -D%s=%s'%(var,var) for uri,var in build_requirements)), semi
+                cmake('-E copy_directory ${SRCDIR} ./source'), semi
               , cmake('-E copy_directory ${BOOST_CMAKELISTS_DIR}/%s ./source' % source_subdir), semi
               , cmake('-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH} ./source' +  # configure
                       {'dbg':' -DBUILD_TYPE=Debug ', 'bin':' -DBUILD_TYPE=Release '}.get(component,'')
