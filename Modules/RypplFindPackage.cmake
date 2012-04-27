@@ -16,8 +16,10 @@ function(ryppl_do_find_package)
 endfunction(ryppl_do_find_package)
 
 macro(ryppl_find_package)
-  find_package(${ARGV})
+  if(RYPPL_INITIAL_PASS)
+    find_package(${ARGV} QUIET MODULE)
+  else()
+    find_package(${ARGV} REQUIRED)
+  endif()
   ryppl_do_find_package(${ARGV})
 endmacro(ryppl_find_package)
-
-
