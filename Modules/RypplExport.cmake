@@ -100,8 +100,15 @@ function(ryppl_export)
     set(_libraries "${_libraries}\${${name}_LIBRARIES}\n ")
   endforeach(depends)
 
-  # incorporate INCLUDE_DIRECTORIES as absolute paths
   foreach(path ${EXPORT_INCLUDE_DIRECTORIES})
+    install(DIRECTORY "${path}/"
+      DESTINATION     "include"
+      COMPONENT       "dev"
+      CONFIGURATIONS  "Release"
+      REGEX "[.]in$" EXCLUDE
+      )
+
+    # incorporate INCLUDE_DIRECTORIES as absolute paths
     get_filename_component(path "${path}" ABSOLUTE)
     set(_include_dirs "${_include_dirs}\"${path}/\"\n ")
   endforeach(path)
@@ -152,11 +159,6 @@ function(ryppl_export)
   endif(_definitions)
 
   if(_include_dirs)
-    install(DIRECTORY ${_include_dirs}
-      DESTINATION include
-      COMPONENT "${BOOST_DEVELOP_COMPONENT}"
-      CONFIGURATIONS "Release"
-      )
     file(APPEND "${_export_file}"
       "set(${PROJECT_NAME}_INCLUDE_DIRS\n ${_include_dirs})\n"
       "if(${PROJECT_NAME}_INCLUDE_DIRS)\n"
