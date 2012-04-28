@@ -110,10 +110,10 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
         ]
       , _.command(name='compile')
         [
-            _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml', 
-                     **{'not-before':'0.8-pre-201204281522'})
+            _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml')
             [
-                _.arg[ '--component='+component ]
+                _.version(**{'not-before':'0.8-pre-201204281803'}) 
+              , _.arg[ '--component='+component ]
               , _.arg[ '--overlay=${BOOST_CMAKELISTS_OVERLAY}' ]
             ]
           , _.requires(interface='http://ryppl.github.com/feeds/boost/CMakeLists.xml')[
