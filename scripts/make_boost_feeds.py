@@ -37,18 +37,23 @@ def split_package_prefix(package_name):
             return prefix, package_name[n:]
     return None, package_name
 
+def requirement(package_name):
+    prefix, basename = split_package_prefix(package_name)
+    return (
+        'http://ryppl.github.com/feeds/%s%s-dev.xml' 
+        % ((prefix.lower() + '/' if prefix else ''), basename)
+      , package_name + '_DIR')
+
 def get_build_requirements(cmake_dump):
-    requirements = []
+    requirements = set()
     for fp in cmake_dump.findall('find-package'):
         args = fp.findall('arg')
-        full_name = args[0].text
-        prefix, name = split_package_prefix(full_name)
-        requirements.append(
-            ('http://ryppl.github.com/feeds/%s%s-dev.xml' 
-             % ((prefix.lower() + '/' if prefix else ''), name)
-           , full_name + '_DIR')
-        )
-    return requirements
+        requirements.add(requirement(args[0].text))
+
+    for d in cmake_dump.findall('depends/dependency'):
+        requirements.add(requirement(d.text))
+
+    return sorted(requirements)
 
 def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, site_metadata_file):
 
@@ -189,3 +194,4 @@ if __name__ == '__main__':
       , source_root=Path(argv[3] if len(argv) > 3 else ryppl/'boost-zero'/'boost')
       , site_metadata_file=Path(argv[4] if len(argv) > 4 else lib_db_default)
         )
+
