@@ -95,13 +95,6 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
     archive_uri = 'http://nodeload.github.com/boost-lib/' + source_subdir + '/zipball/' + lib_revision
     archive = Archive(archive_uri, source_subdir, lib_revision)
 
-    cmake = lambda s: [
-        _.arg[x] for x in 
-        ['http://afb.users.sourceforge.net/zero-install/interfaces/cmake.xml'] + s.split()
-        ]
-    
-    semi = _.arg[';']
-
     iface <<= _.group(license='OSI Approved :: Boost Software License 1.0 (BSL-1.0)')[
         _.implementation(arch='*-src'
                           , id=str(make_uuid())
@@ -117,23 +110,14 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
         ]
       , _.command(name='compile')
         [
-            _.runner(interface='http://ryppl.github.com/feeds/ryppl/0runner.xml')
+            _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml', 
+                     **{'not-before':'0.8-pre-201204281522'})
             [
-                cmake('-E copy_directory ${SRCDIR} ./source'), semi
-              , cmake('-E copy_directory ${BOOST_CMAKELISTS_DIR}/%s ./source' % source_subdir), semi
-              , cmake('-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH} ./source' +  # configure
-                      {'dbg':' -DBUILD_TYPE=Debug ', 'bin':' -DBUILD_TYPE=Release '}.get(component,'')
-                      ), semi
-              , cmake('-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH} --build .' 
-                      + (' --target documentation' if component == 'doc' else '')), semi
-              , cmake('-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH} -DCOMPONENT=%s'
-                      ' -DCMAKE_INSTALL_PREFIX=${DISTDIR} -P cmake_install.cmake' % component)
+                _.arg[ '--component='+component ]
+              , _.arg[ '--overlay=${BOOST_CMAKELISTS_OVERLAY}' ]
             ]
           , _.requires(interface='http://ryppl.github.com/feeds/boost/CMakeLists.xml')[
-                _.environment(insert='.', mode='replace', name='BOOST_CMAKELISTS_DIR')
-            ]
-          , _.requires(interface='http://ryppl.github.com/feeds/ryppl/CMakeSupport.xml')[
-                _.environment(insert='Modules', mode='prepend', name='CMAKE_MODULE_PATH')
+                _.environment(insert=source_subdir, mode='replace', name='BOOST_CMAKELISTS_OVERLAY')
             ]
           , [  _.requires(interface=uri)[ _.environment(insert='.', mode='replace', name=var) ]
                 for uri,var in build_requirements ]
