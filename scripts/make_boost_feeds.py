@@ -50,9 +50,6 @@ def get_build_requirements(cmake_dump):
         args = fp.findall('arg')
         requirements.add(requirement(args[0].text))
 
-    for d in cmake_dump.findall('depends/dependency'):
-        requirements.add(requirement(d.text))
-
     return sorted(requirements)
 
 def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, site_metadata_file):
