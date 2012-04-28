@@ -27,22 +27,27 @@ def content_length(uri):
     else:
         return len(urllib2.urlopen(uri).read())
 
+package_prefixes = ['Boost', 'Ryppl']
+def split_package_prefix(package_name):
+    for prefix in package_prefixes:
+        n = len(prefix)
+        if (len(package_name) > n
+            and package_name.startswith(prefix) 
+            and package_name[n] == package_name[n].upper()):
+            return prefix, package_name[n:]
+    return None, package_name
+
 def get_build_requirements(cmake_dump):
     requirements = []
     for fp in cmake_dump.findall('find-package'):
         args = fp.findall('arg')
-        if args[0].text == 'Boost' and args[1].text == 'COMPONENTS' and args[-1].text == 'NO_MODULE':
-            for a in args[2:-1]:
-                feed_base = ''.join(('IO' if x == 'io' else x.capitalize()) for x in a.text.split('_'))
-                
-                requirements.append(
-                    ( 'http://ryppl.github.com/feeds/boost/%s-dev.xml' % feed_base
-                      , 'Boost%s_DIR' % feed_base
-                      )
-                    )
-        else:
-            warn('Build requirement not encoded:' + dom.tostring(fp))
-
+        full_name = args[0].text
+        prefix, name = split_package_prefix(full_name)
+        requirements.append(
+            ('http://ryppl.github.com/feeds/%s%s-dev.xml' 
+             % ((prefix.lower() + '/' if prefix else ''), name)
+           , full_name + '_DIR')
+        )
     return requirements
 
 def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, site_metadata_file):
