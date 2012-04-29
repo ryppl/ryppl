@@ -46,7 +46,7 @@ include(CMakeParseArguments)
 include(CMakePackageConfigHelpers)
 
 function(ryppl_configure_package_config_file _in _out _prefix)
-  foreach(var INIT INCLUDE_DIRS ${ARGN})
+  foreach(var INIT INCLUDE_DIRS FIND_PACKAGE)
     set(PACKAGE_${var} "${${_prefix}_${var}}")
   endforeach(var)
   configure_file("${_in}" "${_out}" @ONLY)
@@ -96,7 +96,7 @@ function(ryppl_export)
   foreach(depends ${EXPORT_DEPENDS})
     string(FIND ${depends} " " index)
     string(SUBSTRING ${depends} 0 ${index} name)
-    set(_find_package "${_find_package}find_package(${depends})\n")
+    set(_find_package "${_find_package}@PACKAGE_FIND_PACKAGE@(${depends})\n")
     set(_definitions "${_definitions}\${${name}_DEFINITIONS}\n  ")
     set(_include_dirs "${_include_dirs}\n  \${${name}_INCLUDE_DIRS}")
     set(_libraries "${_libraries}\${${name}_LIBRARIES}\n  ")
@@ -194,6 +194,9 @@ function(ryppl_export)
 
   set(BUILD_INIT "")
   set(INSTALL_INIT "\nget_filename_component(PACKAGE_PREFIX_DIR \"\${CMAKE_CURRENT_LIST_DIR}/\" ABSOLUTE)")
+
+  set(BUILD_FIND_PACKAGE "ryppl_find_package")
+  set(INSTALL_FIND_PACKAGE "find_package")
 
   # configure the <project>Config.cmake file for use from the build directory
   ryppl_configure_package_config_file("${_config_in}" "${_config_build}"
