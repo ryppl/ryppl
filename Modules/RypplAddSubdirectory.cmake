@@ -41,3 +41,7 @@ macro(ryppl_add_example_subdirectory)
     add_subdirectory(${ARGV})
   endif()
 endmacro(ryppl_add_example_subdirectory)
+
+# silence warnings about unused variables
+if(RYPPL_DISABLE_TESTS OR RYPPL_DISABLE_DOCS OR RYPPL_DISABLE_EXAMPLES)
+endif()
