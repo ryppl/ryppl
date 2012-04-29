@@ -12,7 +12,11 @@ set(__RYPPL_FIND_PACKAGE_INCLUDED TRUE)
 
 function(ryppl_do_find_package)
   string(REGEX REPLACE "\;" "\\\;" argument_pack "${ARGV}")
-  set_property(DIRECTORY APPEND PROPERTY RYPPL_FIND_PACKAGE_ARGS "${argument_pack}")
+  get_property(find_package_args GLOBAL PROPERTY ${PROJECT_NAME}_FIND_PACKAGE_ARGS)
+  list(FIND find_package_args "${argument_pack}" index)
+  if("${index}" EQUAL "-1")
+    set_property(GLOBAL APPEND PROPERTY ${PROJECT_NAME}_FIND_PACKAGE_ARGS "${argument_pack}")
+  endif()
 endfunction(ryppl_do_find_package)
 
 macro(ryppl_find_package)
