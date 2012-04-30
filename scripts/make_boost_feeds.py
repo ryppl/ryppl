@@ -4,7 +4,7 @@
 # accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt
 
-import glob, re, os, sys, shutil, tempfile, urllib2
+import glob, re, os, sys, shutil, urllib2
 from datetime import date, datetime
 from warnings import warn
 from subprocess import check_output, check_call, Popen, PIPE
