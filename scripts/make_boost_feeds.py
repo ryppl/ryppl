@@ -199,11 +199,16 @@ def run(dump_dir, feed_dir, source_root, site_metadata_file):
             lib_metadata = boost_metadata.lib_metadata(source_subdir, all_libs_metadata)
 
             p.apply_async(
+                write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'src', lib_metadata))
+
+            p.apply_async(
                 write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'dev', lib_metadata))
 
             if cmake_dump.findall('libraries/library'):
                 p.apply_async(
                     write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'bin', lib_metadata))
+                p.apply_async(
+                    write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'preinstall', lib_metadata))
 
             p.apply_async(
                 write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'dbg', lib_metadata))
