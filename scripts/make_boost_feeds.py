@@ -76,9 +76,7 @@ def get_build_requirements(cmake_dump):
 
     return sorted(requirements)
 
-def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, all_libs_metadata):
-
-    lib_metadata = boost_metadata.lib_metadata(source_subdir, all_libs_metadata)
+def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_metadata):
 
     # os.unlink(feed_file)
     build_requirements = get_build_requirements(cmake_dump)
@@ -171,16 +169,17 @@ def run(dump_dir, feed_dir, source_root, site_metadata_file):
             print '>', camel_name
 
             source_subdir = cmake_dump.findtext('source-directory') - source_root
+            lib_metadata = boost_metadata.lib_metadata(source_subdir, all_libs_metadata)
 
             p.apply_async(
-                write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'dev', all_libs_metadata))
+                write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'dev', lib_metadata))
 
             if cmake_dump.findall('libraries/library'):
                 p.apply_async(
-                    write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'bin', all_libs_metadata))
+                    write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'bin', lib_metadata))
 
             p.apply_async(
-                write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'dbg', all_libs_metadata))
+                write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'dbg', lib_metadata))
     except:
         p.terminate()
         raise
