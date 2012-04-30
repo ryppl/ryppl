@@ -4,18 +4,43 @@
 # accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt
 
-import glob, re, os, sys, shutil, tempfile, urllib2
+import glob, re, os, sys, shutil, urllib2
 from datetime import date, datetime
 from warnings import warn
 from subprocess import check_output, check_call, Popen, PIPE
-from xml.etree.cElementTree import ElementTree
+from xml.etree.cElementTree import ElementTree, Element
 import dom, path
 from path import Path
 import boost_metadata
 from uuid import uuid4 as make_uuid
 from archive import Archive
+from sign_feed import *
 
-import multiprocessing
+# import multiprocessing
+
+class uniprocessing:
+    class Pool(object):
+        def apply_async(self, f, args):
+            return f(*args)
+
+        def terminate(self): pass
+        def close(self): pass
+        def join(self): pass
+
+import threadpool
+class multiprocessing:
+    class Pool(threadpool.ThreadPool):
+        def __init__(self, n = 32):
+            threadpool.ThreadPool.__init__(self, n)
+
+        def apply_async(self, f, args):
+            self.add_task(f, *args)
+
+        def terminate(self): pass
+        def close(self): pass
+
+        def join(self):
+            self.wait_completion()
 
 def content_length(uri):
     request = urllib2.Request(uri)
@@ -32,7 +57,7 @@ def split_package_prefix(package_name):
     for prefix in package_prefixes:
         n = len(prefix)
         if (len(package_name) > n
-            and package_name.startswith(prefix) 
+            and package_name.startswith(prefix)
             and package_name[n] == package_name[n].upper()):
             return prefix, package_name[n:]
     return None, package_name
@@ -40,7 +65,7 @@ def split_package_prefix(package_name):
 def requirement(package_name):
     prefix, basename = split_package_prefix(package_name)
     return (
-        'http://ryppl.github.com/feeds/%s%s-dev.xml' 
+        'http://ryppl.github.com/feeds/%s%s-dev.xml'
         % ((prefix.lower() + '/' if prefix else ''), basename)
       , package_name + '_DIR')
 
@@ -52,24 +77,30 @@ def get_build_requirements(cmake_dump):
 
     return sorted(requirements)
 
-def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, site_metadata_file):
 
-    t = ElementTree()
-    t.parse(site_metadata_file)
-    all_libs_metadata = t.getroot().findall('library')
+human_component = {
+    'bin':'binaries'
+  , 'src':'source code'
+  , 'dev':'development files'
+  , 'dbg':'debugging version'
+  , 'preinstall':'built state'
+  , 'doc':'documentation'
+    }
 
-    cmake_dump = ElementTree()
-    cmake_dump.parse(cmake_dump_file)
-    lib_metadata = boost_metadata.lib_metadata(source_subdir, all_libs_metadata)
-
-    # os.unlink(feed_file)
+def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_metadata):
     build_requirements = get_build_requirements(cmake_dump)
     srcdir = cmake_dump.findtext('source-directory')
     lib_name = os.path.basename(srcdir)
     lib_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=srcdir).strip()
 
     version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
-    feed_name_base = camel_name[len('Boost') if camel_name.startswith('Boost') else 0:]
+
+    feed_name_base = brand_name = camel_name
+    if camel_name.startswith('Boost'):
+        rest = camel_name[len('Boost'):]
+        if rest[0].isupper():
+            feed_name_base = rest
+            brand_name = 'Boost.' + feed_name_base
 
     suffix = '-%s'%component if component != 'bin' else ''
     feed_name = feed_name_base + suffix + '.xml'
@@ -79,12 +110,12 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
     iface = _.interface(
         uri='http://ryppl.github.com/feeds/boost/' + feed_name
       , xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
-      , **{ 
+      , **{
             'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
           , 'xmlns:dc':'http://purl.org/dc/elements/1.1/'
             })[
-        _.name[camel_name]
-      , _.icon(href="http://svn.boost.org/svn/boost/website/public_html/live/gfx/boost-dark-trans.png" 
+        _.name['%s (%s)' % (brand_name, human_component[component])]
+      , _.icon(href="http://svn.boost.org/svn/boost/website/public_html/live/gfx/boost-dark-trans.png"
              , type="image/png")
       ]
 
@@ -104,7 +135,7 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
                             )
         [
             _.archive(
-                extract=archive.subdir, href=archive_uri, 
+                extract=archive.subdir, href=archive_uri,
                 size=str(archive.size), type='application/zip')
           , _.manifest_digest(sha256=archive.digest)
         ]
@@ -121,7 +152,7 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
             ]
           , [  _.requires(interface=uri)[ _.environment(insert='.', mode='replace', name=var) ]
                 for uri,var in build_requirements ]
-          , [ dom.xmlns.compile.implementation(arch='*-*') 
+          , [ dom.xmlns.compile.implementation(arch='*-*')
               if component == 'dev' and not cmake_dump.findall('libraries/library')
               else [] ]
         ]
@@ -132,36 +163,77 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
     feed_path = feed_dir/feed_name
     dom.xml_document(iface).write(feed_path, encoding='utf-8', xml_declaration=True)
 
-    check_call(['0publish', '--xmlsign', feed_path])
+    sign_feed(feed_path)
 
 def run(dump_dir, feed_dir, source_root, site_metadata_file):
+    print '### deleting old feeds...'
+    for old_feed in glob.glob(os.path.join(feed_dir,'*.xml')):
+        if Path(old_feed).name != 'CMakeLists.xml':
+            os.unlink(old_feed)
+
+    print '### collecting all dumps...'
+    all_dumps = {}
+    for cmake_dump_file in glob.glob(os.path.join(dump_dir,'*.xml')):
+        cmake_dump = ElementTree()
+        cmake_dump.parse(cmake_dump_file)
+        camel_name = Path(cmake_dump_file).namebase
+        all_dumps[camel_name] = cmake_dump
+
+    print '### binary libraries:'
+    binary_libs = set(name for name, dump in all_dumps.items() if dump.find('libraries/library') is not None)
+    import pprint
+    pprint.pprint(binary_libs)
+
+    print '### Computing SCCS...'
+    from SCC import SCC
+
+    def successors(v):
+        return [
+            lib for lib in (
+                fp.findtext('arg') for fp
+                in all_dumps.get(v, Element('x')).findall('find-package'))
+            if lib in binary_libs]
+
+    sccs = SCC(lambda x:x, successors).getsccs(binary_libs)
+    import pprint
+    pprint.pprint([x for x in sccs if len(x) > 1], width=500)
+
+    print '### reading Boost library metadata...'
+    t = ElementTree()
+    t.parse(site_metadata_file)
+    all_libs_metadata = t.getroot().findall('library')
+
+
+    print '### Generating feeds...'
     p = multiprocessing.Pool()
-
-
     try:
-        for cmake_dump_file in glob.glob(os.path.join(dump_dir,'*.xml')):
-
-            cmake_dump = ElementTree()
-            cmake_dump.parse(cmake_dump_file)
-            camel_name = Path(cmake_dump_file).namebase
-
+        for camel_name, cmake_dump in all_dumps.items():
+            print '#', camel_name
             source_subdir = cmake_dump.findtext('source-directory') - source_root
+            lib_metadata = boost_metadata.lib_metadata(source_subdir, all_libs_metadata)
 
             p.apply_async(
-                write_feed, (cmake_dump_file, feed_dir, source_subdir, camel_name, 'dev', site_metadata_file))
+                write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'src', lib_metadata))
+
+            p.apply_async(
+                write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'dev', lib_metadata))
 
             if cmake_dump.findall('libraries/library'):
                 p.apply_async(
-                    write_feed, (cmake_dump_file, feed_dir, source_subdir, camel_name, 'bin', site_metadata_file))
+                    write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'bin', lib_metadata))
+                p.apply_async(
+                    write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'preinstall', lib_metadata))
 
             p.apply_async(
-                write_feed, (cmake_dump_file, feed_dir, source_subdir, camel_name, 'dbg', site_metadata_file))
+                write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'dbg', lib_metadata))
     except:
         p.terminate()
         raise
-    else:
-        p.close()
-        p.join()
+
+    print '### Awaiting completion...'
+    p.close()
+    p.join()
+    print '### Done.'
 
 if __name__ == '__main__':
     argv = sys.argv
@@ -175,4 +247,3 @@ if __name__ == '__main__':
       , source_root=Path(argv[3] if len(argv) > 3 else ryppl/'boost-zero'/'boost')
       , site_metadata_file=Path(argv[4] if len(argv) > 4 else lib_db_default)
         )
-

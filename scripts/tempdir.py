@@ -1,22 +1,34 @@
 import tempfile
 import os
 import shutil
+from path import *
 
-class TempDir(object):
-    def __init__(self, *args, **kw):
-        self.args = args
-        self.kw = kw
+class TempDir(Path):
+    def __new__(cls, delete=True, *args, **kw):
+        ret = Path.__new__(cls, tempfile.mkdtemp(*args, **kw))
+        ret.delete=delete
+        ret.saved_wd = os.getcwd()
+        return ret
 
     def __enter__(self):
-        self.dir = tempfile.mkdtemp(*self.args, **self.kw)
-        self.saved_wd = os.getcwd()
-        return self.dir
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        os.chdir(self.saved_wd)
-        try:
-            shutil.rmtree(self.dir)
-        except:
-            print 'failed to clean up', self.dir
-            pass # we don't care very much if it doesn't get cleaned up
+        self.__cleanup()
+
+    def __cleanup(self):
+        if self.delete:
+            self.delete = False
+            if os.getcwd() == self:
+                os.chdir(self.saved_wd)
+            try:
+                shutil.rmtree(self)
+            except:
+                print 'failed to clean up', self
+                pass # we don't care very much if it doesn't get cleaned up
+
+    def __del__(self):
+        self.__cleanup()
+
+
 
