@@ -76,14 +76,8 @@ def get_build_requirements(cmake_dump):
 
     return sorted(requirements)
 
-def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, site_metadata_file):
+def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, all_libs_metadata):
 
-    t = ElementTree()
-    t.parse(site_metadata_file)
-    all_libs_metadata = t.getroot().findall('library')
-
-    cmake_dump = ElementTree()
-    cmake_dump.parse(cmake_dump_file)
     lib_metadata = boost_metadata.lib_metadata(source_subdir, all_libs_metadata)
 
     # os.unlink(feed_file)
@@ -159,27 +153,34 @@ def write_feed(cmake_dump_file, feed_dir, source_subdir, camel_name, component, 
     check_call(['0publish', '--xmlsign', feed_path])
 
 def run(dump_dir, feed_dir, source_root, site_metadata_file):
+
+    all_dumps = {}
+    for cmake_dump_file in glob.glob(os.path.join(dump_dir,'*.xml')):
+        cmake_dump = ElementTree()
+        cmake_dump.parse(cmake_dump_file)
+        camel_name = Path(cmake_dump_file).namebase
+        all_dumps[camel_name] = cmake_dump
+
+    t = ElementTree()
+    t.parse(site_metadata_file)
+    all_libs_metadata = t.getroot().findall('library')
+
     p = multiprocessing.Pool()
-
-
     try:
-        for cmake_dump_file in glob.glob(os.path.join(dump_dir,'*.xml')):
-
-            cmake_dump = ElementTree()
-            cmake_dump.parse(cmake_dump_file)
-            camel_name = Path(cmake_dump_file).namebase
+        for camel_name, cmake_dump in all_dumps.items():
+            print '>', camel_name
 
             source_subdir = cmake_dump.findtext('source-directory') - source_root
 
             p.apply_async(
-                write_feed, (cmake_dump_file, feed_dir, source_subdir, camel_name, 'dev', site_metadata_file))
+                write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'dev', all_libs_metadata))
 
             if cmake_dump.findall('libraries/library'):
                 p.apply_async(
-                    write_feed, (cmake_dump_file, feed_dir, source_subdir, camel_name, 'bin', site_metadata_file))
+                    write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'bin', all_libs_metadata))
 
             p.apply_async(
-                write_feed, (cmake_dump_file, feed_dir, source_subdir, camel_name, 'dbg', site_metadata_file))
+                write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'dbg', all_libs_metadata))
     except:
         p.terminate()
         raise
