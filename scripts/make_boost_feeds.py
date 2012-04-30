@@ -14,6 +14,7 @@ from path import Path
 import boost_metadata
 from uuid import uuid4 as make_uuid
 from archive import Archive
+from sign_feed import *
 
 # import multiprocessing
 
@@ -148,10 +149,9 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
     feed_path = feed_dir/feed_name
     dom.xml_document(iface).write(feed_path, encoding='utf-8', xml_declaration=True)
 
-    check_call(['0publish', '--xmlsign', feed_path])
+    sign_feed(feed_path)
 
 def run(dump_dir, feed_dir, source_root, site_metadata_file):
-
     print '### deleting old feeds...'
     for old_feed in glob.glob(os.path.join(feed_dir,'*.xml')):
         if Path(old_feed).name != 'CMakeLists.xml':
