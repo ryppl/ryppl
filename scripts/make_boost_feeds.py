@@ -151,6 +151,11 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
     check_call(['0publish', '--xmlsign', feed_path])
 
 def run(dump_dir, feed_dir, source_root, site_metadata_file):
+    
+    print '### deleting old feeds...'
+    for old_feed in glob.glob(os.path.join(feed_dir,'*.xml')):
+        if Path(old_feed).name != 'CMakeLists.xml':
+            os.unlink(old_feed)
 
     all_dumps = {}
     for cmake_dump_file in glob.glob(os.path.join(dump_dir,'*.xml')):
