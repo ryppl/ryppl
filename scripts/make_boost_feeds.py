@@ -15,7 +15,31 @@ import boost_metadata
 from uuid import uuid4 as make_uuid
 from archive import Archive
 
-import multiprocessing
+# import multiprocessing
+
+class uniprocessing:
+    class Pool(object):
+        def apply_async(self, f, args):
+            return f(*args)
+
+        def terminate(self): pass
+        def close(self): pass
+        def join(self): pass
+
+import threadpool
+class multiprocessing:
+    class Pool(threadpool.ThreadPool):
+        def __init__(self, n = 32):
+            threadpool.ThreadPool.__init__(self, n)
+
+        def apply_async(self, f, args):
+            self.add_task(f, *args)
+
+        def terminate(self): pass
+        def close(self): pass
+
+        def join(self): 
+            self.wait_completion()
 
 def content_length(uri):
     request = urllib2.Request(uri)
