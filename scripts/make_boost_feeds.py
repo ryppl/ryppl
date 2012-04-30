@@ -77,16 +77,30 @@ def get_build_requirements(cmake_dump):
 
     return sorted(requirements)
 
-def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_metadata):
 
-    # os.unlink(feed_file)
+human_component = {
+    'bin':'binaries'
+  , 'src':'source code'
+  , 'dev':'development files'
+  , 'dbg':'debugging version'
+  , 'preinstall':'built state'
+  , 'doc':'documentation'
+    }
+
+def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_metadata):
     build_requirements = get_build_requirements(cmake_dump)
     srcdir = cmake_dump.findtext('source-directory')
     lib_name = os.path.basename(srcdir)
     lib_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=srcdir).strip()
 
     version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
-    feed_name_base = camel_name[len('Boost') if camel_name.startswith('Boost') else 0:]
+
+    feed_name_base = brand_name = camel_name
+    if camel_name.startswith('Boost'):
+        rest = camel_name[len('Boost'):]
+        if rest[0].isupper():
+            feed_name_base = rest
+            brand_name = 'Boost.' + feed_name_base
 
     suffix = '-%s'%component if component != 'bin' else ''
     feed_name = feed_name_base + suffix + '.xml'
@@ -100,7 +114,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
             'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
           , 'xmlns:dc':'http://purl.org/dc/elements/1.1/'
             })[
-        _.name[camel_name]
+        _.name['%s (%s)' % (brand_name, human_component[component])]
       , _.icon(href="http://svn.boost.org/svn/boost/website/public_html/live/gfx/boost-dark-trans.png"
              , type="image/png")
       ]
