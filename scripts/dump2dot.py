@@ -12,8 +12,6 @@ from read_dumps import read_dumps
 
 def run(dump_dir=None):
     all_dumps = read_dumps(dump_dir)
-    print 'overlap=false;'
-    print 'rotate=90;'
     print 'digraph boost {'
     for s, dump in all_dumps.items():
         if dump.find('libraries/library') is not None:
