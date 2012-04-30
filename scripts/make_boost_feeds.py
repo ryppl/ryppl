@@ -8,7 +8,7 @@ import glob, re, os, sys, shutil, tempfile, urllib2
 from datetime import date, datetime
 from warnings import warn
 from subprocess import check_output, check_call, Popen, PIPE
-from xml.etree.cElementTree import ElementTree
+from xml.etree.cElementTree import ElementTree, Element
 import dom, path
 from path import Path
 import boost_metadata
@@ -164,6 +164,25 @@ def run(dump_dir, feed_dir, source_root, site_metadata_file):
         cmake_dump.parse(cmake_dump_file)
         camel_name = Path(cmake_dump_file).namebase
         all_dumps[camel_name] = cmake_dump
+
+    print '### binary libraries:'
+    binary_libs = set(name for name, dump in all_dumps.items() if dump.find('libraries/library') is not None)
+    import pprint
+    pprint.pprint(binary_libs)
+
+    print '### Computing SCCS...'
+    from SCC import SCC
+
+    def successors(v):
+        return [
+            lib for lib in (
+                fp.findtext('arg') for fp
+                in all_dumps.get(v, Element('x')).findall('find-package'))
+            if lib in binary_libs]
+
+    sccs = SCC(lambda x:x, successors).getsccs(binary_libs)
+    import pprint
+    pprint.pprint([x for x in sccs if len(x) > 1], width=500)
 
     print '### reading Boost library metadata...'
     t = ElementTree()
