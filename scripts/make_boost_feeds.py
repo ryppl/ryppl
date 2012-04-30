@@ -38,7 +38,7 @@ class multiprocessing:
         def terminate(self): pass
         def close(self): pass
 
-        def join(self): 
+        def join(self):
             self.wait_completion()
 
 def content_length(uri):
@@ -56,7 +56,7 @@ def split_package_prefix(package_name):
     for prefix in package_prefixes:
         n = len(prefix)
         if (len(package_name) > n
-            and package_name.startswith(prefix) 
+            and package_name.startswith(prefix)
             and package_name[n] == package_name[n].upper()):
             return prefix, package_name[n:]
     return None, package_name
@@ -64,7 +64,7 @@ def split_package_prefix(package_name):
 def requirement(package_name):
     prefix, basename = split_package_prefix(package_name)
     return (
-        'http://ryppl.github.com/feeds/%s%s-dev.xml' 
+        'http://ryppl.github.com/feeds/%s%s-dev.xml'
         % ((prefix.lower() + '/' if prefix else ''), basename)
       , package_name + '_DIR')
 
@@ -95,12 +95,12 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
     iface = _.interface(
         uri='http://ryppl.github.com/feeds/boost/' + feed_name
       , xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
-      , **{ 
+      , **{
             'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
           , 'xmlns:dc':'http://purl.org/dc/elements/1.1/'
             })[
         _.name[camel_name]
-      , _.icon(href="http://svn.boost.org/svn/boost/website/public_html/live/gfx/boost-dark-trans.png" 
+      , _.icon(href="http://svn.boost.org/svn/boost/website/public_html/live/gfx/boost-dark-trans.png"
              , type="image/png")
       ]
 
@@ -120,7 +120,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
                             )
         [
             _.archive(
-                extract=archive.subdir, href=archive_uri, 
+                extract=archive.subdir, href=archive_uri,
                 size=str(archive.size), type='application/zip')
           , _.manifest_digest(sha256=archive.digest)
         ]
@@ -137,7 +137,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
             ]
           , [  _.requires(interface=uri)[ _.environment(insert='.', mode='replace', name=var) ]
                 for uri,var in build_requirements ]
-          , [ dom.xmlns.compile.implementation(arch='*-*') 
+          , [ dom.xmlns.compile.implementation(arch='*-*')
               if component == 'dev' and not cmake_dump.findall('libraries/library')
               else [] ]
         ]
@@ -151,7 +151,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
     check_call(['0publish', '--xmlsign', feed_path])
 
 def run(dump_dir, feed_dir, source_root, site_metadata_file):
-    
+
     print '### deleting old feeds...'
     for old_feed in glob.glob(os.path.join(feed_dir,'*.xml')):
         if Path(old_feed).name != 'CMakeLists.xml':
@@ -209,4 +209,3 @@ if __name__ == '__main__':
       , source_root=Path(argv[3] if len(argv) > 3 else ryppl/'boost-zero'/'boost')
       , site_metadata_file=Path(argv[4] if len(argv) > 4 else lib_db_default)
         )
-
