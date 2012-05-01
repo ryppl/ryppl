@@ -87,6 +87,13 @@ human_component = {
   , 'doc':'documentation'
     }
 
+def pkg_names(camel_name):
+    if camel_name.startswith('Boost'):
+        rest = camel_name[len('Boost'):]
+        if rest[0].isupper():
+            return 'Boost.'+rest, rest
+    return camel_name, camel_name
+
 def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_metadata):
     build_requirements = get_build_requirements(cmake_dump)
     srcdir = cmake_dump.findtext('source-directory')
@@ -95,12 +102,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
 
     version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
 
-    feed_name_base = brand_name = camel_name
-    if camel_name.startswith('Boost'):
-        rest = camel_name[len('Boost'):]
-        if rest[0].isupper():
-            feed_name_base = rest
-            brand_name = 'Boost.' + feed_name_base
+    brand_name,feed_name_base = pkg_names(camel_name)
 
     suffix = '-%s'%component if component != 'bin' else ''
     feed_name = feed_name_base + suffix + '.xml'
