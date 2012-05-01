@@ -185,10 +185,9 @@ class Generate(object):
             print '##', self.brand_name
 
             self.tasks.add_task(self._write_src_feed)
+            self.tasks.add_task(self._write_dev_feed)
             if cmake_name in self.binary_libs:
                 self._write_binary_feeds()
-            else:
-                self._write_header_only_feeds()
         
         def __getattr__(self, name):
             return getattr(self.ctx,name)
@@ -219,18 +218,26 @@ class Generate(object):
                 )
 
         def _write_dev_feed(self):
-            if cmake_name in self.binary_libs:
+            if self.cmake_name in self.binary_libs:
                 return  # don't know what to do for this case yet
 
+            _ = dom.dashtag
             self._write_feed(
                 'dev'
                 , self._interface('dev') [
-                    boost_group(version=self.version, arch='*-src')[
-                        
-                        ]
-                    ]
-                )
-                    
+                      boost_group(version=self.version, arch='*-src')[
+                          _.command(name='compile') [
+                              _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml') [
+                                  _.version(**{'not-before':'0.8-pre-201205011504'})
+                                , _.arg[ 'headers' ]
+                              ]
+                            , _.requires(interface='http://ryppl.github.com/feeds/boost/CMakeLists.xml')[
+                                  _.environment(insert=self.repo, mode='replace', name='BOOST_CMAKELISTS_OVERLAY')
+                              ]
+                            , dom.xmlns.compile.implementation(arch='*-*')
+                          ]
+                      ]
+                  ])
 
         def _write_binary_feeds(self):
             pass
@@ -255,20 +262,20 @@ class Generate(object):
         from SCC import SCC
 
         def successors(v):
-            return set([
-                    fp.findtext('arg') for fp
-                    in (
-                        self.dumps.get(v, Element('x')).findall('find-package')
-                        + self.dumps.get(v, Element('x')).findall('find-package-indirect')
-                        )
-                    ])
+            return set(
+                fp.findtext('arg') 
+                for fp in self.dumps.get(v, Element('x')).findall('find-package')
+            ) | set(
+                fp.findtext('arg') 
+                for fp in self.dumps.get(v, Element('x')).findall('find-package-indirect'))
         
-        sccs = SCC(str,successors).getsccs(self.dumps.keys())
+        sccs = SCC(str,successors).getsccs(self.dumps)
+        long_sccs = [s for s in sccs if len(s) > 1]
 
-        if len(sccs) < len(self.dumps):
-            raise AssertionError, ( 
+        if any(long_sccs):
+            warn( 
             'Build dependency graph contains cycles.  All SCCs:\n'
-            + repr(s for s in sccs if len(s) > 1))
+            + repr(long_sccs))
 
         print 'Done.'
 
