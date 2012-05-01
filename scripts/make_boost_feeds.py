@@ -58,7 +58,7 @@ def split_package_prefix(package_name):
         n = len(prefix)
         if (len(package_name) > n
             and package_name.startswith(prefix)
-            and package_name[n] == package_name[n].upper()):
+            and package_name[n].isupper():
             return prefix, package_name[n:]
     return None, package_name
 
@@ -87,6 +87,13 @@ human_component = {
   , 'doc':'documentation'
     }
 
+def pkg_names(camel_name):
+    if camel_name.startswith('Boost'):
+        rest = camel_name[len('Boost'):]
+        if rest[0].isupper():
+            return 'Boost.'+rest, rest
+    return camel_name, camel_name
+
 def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_metadata):
     build_requirements = get_build_requirements(cmake_dump)
     srcdir = cmake_dump.findtext('source-directory')
@@ -95,12 +102,7 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
 
     version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
 
-    feed_name_base = brand_name = camel_name
-    if camel_name.startswith('Boost'):
-        rest = camel_name[len('Boost'):]
-        if rest[0].isupper():
-            feed_name_base = rest
-            brand_name = 'Boost.' + feed_name_base
+    brand_name,feed_name_base = pkg_names(camel_name)
 
     suffix = '-%s'%component if component != 'bin' else ''
     feed_name = feed_name_base + suffix + '.xml'
@@ -166,6 +168,9 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
     sign_feed(feed_path)
 
 def run(dump_dir, feed_dir, source_root, site_metadata_file):
+    version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
+    print '### new version =', version
+
     print '### deleting old feeds...'
     for old_feed in glob.glob(os.path.join(feed_dir,'*.xml')):
         if Path(old_feed).name != 'CMakeLists.xml':
@@ -179,23 +184,29 @@ def run(dump_dir, feed_dir, source_root, site_metadata_file):
         camel_name = Path(cmake_dump_file).namebase
         all_dumps[camel_name] = cmake_dump
 
+
     print '### binary libraries:'
     binary_libs = set(name for name, dump in all_dumps.items() if dump.find('libraries/library') is not None)
     import pprint
     pprint.pprint(binary_libs)
 
-    print '### Computing SCCS...'
+    print '### Computing SCCs...'
     from SCC import SCC
 
     def successors(v):
         return [
-            lib for lib in (
                 fp.findtext('arg') for fp
-                in all_dumps.get(v, Element('x')).findall('find-package'))
-            if lib in binary_libs]
+                in (
+                    all_dumps.get(v, Element('x')).findall('find-package')
+                    + all_dumps.get(v, Element('x')).findall('find-package-indirect')
+                    )
+                ]
 
-    sccs = SCC(lambda x:x, successors).getsccs(binary_libs)
-    import pprint
+    for cluster in SCC(lambda x:x, successors).getsccs(all_dumps):
+        cluster.sort()
+        preinstall_name = 'Boost' + ''.join(pkg_names(c)[1] for c in cluster)
+            
+    
     pprint.pprint([x for x in sccs if len(x) > 1], width=500)
 
     print '### reading Boost library metadata...'

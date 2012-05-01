@@ -42,17 +42,32 @@ class metatag(object.__class__):
     def __getattr__(self, name):
         return tag(name)
 
+# For debugging purposes only
+def dump(x, indent=0):
+     if isinstance(x, tag):
+         dump(x.element,indent)
+     elif isinstance(x, _Element):
+         print indent*' '+'_.'+x.tag, x.attrib, (x.text,x.tail)
+         for y in x:
+             dump(y, indent+2)
+     else:
+         print repr(x)
+
 class tag(object):
     __metaclass__ = metatag
 
     def __init__(self, _tag_name, _extra={}, **_attributes):
-        self.__element = ElementTree.Element(_tag_name, _attributes, **_extra)
+        self.__element = ElementTree.Element(
+            _tag_name
+          , dict( [(k, unicode(v)) for k,v in _attributes.items()] )
+          , **_extra
+            )
 
     def __call__(self, **attributes):
         for k,v in attributes.items():
             if k.startswith('_'):
                 k = k[1:]
-            self.element.attrib[k] = v
+            self.element.attrib[k] = unicode(v)
         return self
 
     def __ilshift__(self, x):

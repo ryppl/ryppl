@@ -10,39 +10,46 @@ from xml.etree.cElementTree import ElementTree, Element
 from path import Path
 from read_dumps import read_dumps
 
+def direct_successors(all_dumps, v):
+    return set( fp.findtext('arg') for fp in all_dumps.get(v, Element('x')).findall('find-package') )
+
+def indirect_successors(all_dumps, v):
+    return set( fp.findtext('arg') for fp in all_dumps.get(v, Element('x')).findall('find-package-indirect') )
+
+def usage_dependencies(all_dumps, v):
+    return set( d.text for d in all_dumps.get(v, Element('x')).findall('depends/dependency') )
+
+def usage_successors(all_dumps, v):
+    succ = set()
+    for s in direct_successors(all_dumps, v):
+        succ |= set(x.text for x in all_dumps.get(v, Element('x')).findall('depends/dependency'))
+    return succ
+
+def successors(all_dumps, v):
+    return direct_successors(all_dumps,v) | indirect_successors(all_dumps,v)
+
 def run(dump_dir=None):
     all_dumps = read_dumps(dump_dir)
-
-    from SCC import SCC
-    def successors(v):
-        return [
-            lib for lib in (
-                fp.findtext('arg') for fp
-                in (all_dumps.get(v, Element('x')).findall('find-package')
-                + all_dumps.get(v, Element('x')).findall('find-package-indirect'))
-                )]
-
-    sccs = SCC(lambda x:x, successors).getsccs(all_dumps)
-    import pprint
-    cyclic = set()
-    for scc in sccs:
-        if len(scc) > 1:
-            cyclic |= set(scc)
-
     print 'digraph boost {'
-    print 'layout=neato;'
-    print 'overlap=scalexy;'
     print 'splines=true;'
-    for s in cyclic:
-        dump = all_dumps[s]
+    print 'layout=dot;'
+    #print 'nodesep=3;'
+    print 'overlap=scalexy;'
+    for s, dump in all_dumps.items():
         if dump.find('libraries/library') is not None:
             print s, '[shape=box3d]'
-        for t in [t.find('arg').text for t in dump.findall('find-package')]:
-            if t in cyclic:
-                print s,'->', t
-        for t in dump.findall('find-package-indirect'):
-            if t in cyclic:
-                print s,'->', t.find('arg').text,'[style=dotted]'
+
+        for t in direct_successors(all_dumps,s):
+            if successors(all_dumps, t):
+                print s,'->', t,'[style=bold]'
+
+        for t in indirect_successors(all_dumps, s):
+            if successors(all_dumps, t):
+                print s,'->', t,'[style=dotted,arrowhead=open,color=gray]'
+
+        for t in usage_successors(all_dumps, s):
+            if usage_successors(all_dumps, t):
+                print s,'->', t,'[style=dashed,arrowhead=open,color=blue]'
     print '}'
 
 if __name__ == '__main__':
