@@ -58,7 +58,7 @@ def split_package_prefix(package_name):
         n = len(prefix)
         if (len(package_name) > n
             and package_name.startswith(prefix)
-            and package_name[n].isupper():
+            and package_name[n].isupper()):
             return prefix, package_name[n:]
     return None, package_name
 
