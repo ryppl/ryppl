@@ -195,6 +195,7 @@ class Generate(object):
             interface.indent()
             feed_path = self.feed_dir/self.repo + ('' if component == 'bin' else '-'+component) + '.xml'
             dom.xml_document(interface).write(feed_path, encoding='utf-8', xml_declaration=True)
+            sign_feed(feed_path)
 
         def _interface(self, component):
             interface = interface_head('http://ryppl.github.com/feeds/boost/%s.xml'%self.repo, self.brand_name, component)
@@ -215,8 +216,19 @@ class Generate(object):
                     ]
                 )
 
-        def _write_header_only_feeds(self):
-            pass
+        def _write_dev_feed(self):
+            if cmake_name in self.binary_libs:
+                return  # don't know what to do for this case yet
+
+            self._write_feed(
+                'dev'
+                , self._interface('dev') [
+                    boost_group(version=self.version, arch='*-src')[
+                        
+                        ]
+                    ]
+                )
+                    
 
         def _write_binary_feeds(self):
             pass
