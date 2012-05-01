@@ -57,13 +57,17 @@ class tag(object):
     __metaclass__ = metatag
 
     def __init__(self, _tag_name, _extra={}, **_attributes):
-        self.__element = ElementTree.Element(_tag_name, _attributes, **_extra)
+        self.__element = ElementTree.Element(
+            _tag_name
+          , dict( [(k, unicode(v)) for k,v in _attributes.items()] )
+          , **_extra
+            )
 
     def __call__(self, **attributes):
         for k,v in attributes.items():
             if k.startswith('_'):
                 k = k[1:]
-            self.element.attrib[k] = v
+            self.element.attrib[k] = unicode(v)
         return self
 
     def __ilshift__(self, x):
