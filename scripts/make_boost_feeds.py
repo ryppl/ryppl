@@ -181,23 +181,29 @@ def run(dump_dir, feed_dir, source_root, site_metadata_file):
         camel_name = Path(cmake_dump_file).namebase
         all_dumps[camel_name] = cmake_dump
 
+
     print '### binary libraries:'
     binary_libs = set(name for name, dump in all_dumps.items() if dump.find('libraries/library') is not None)
     import pprint
     pprint.pprint(binary_libs)
 
-    print '### Computing SCCS...'
+    print '### Computing SCCs...'
     from SCC import SCC
 
     def successors(v):
         return [
-            lib for lib in (
                 fp.findtext('arg') for fp
-                in all_dumps.get(v, Element('x')).findall('find-package'))
-            if lib in binary_libs]
+                in (
+                    all_dumps.get(v, Element('x')).findall('find-package')
+                    + all_dumps.get(v, Element('x')).findall('find-package-indirect')
+                    )
+                ]
 
-    sccs = SCC(lambda x:x, successors).getsccs(binary_libs)
-    import pprint
+    for cluster in SCC(lambda x:x, successors).getsccs(all_dumps):
+        cluster.sort()
+        preinstall_name = 'Boost' + ''.join(pkg_names(c)[1] for c in cluster)
+            
+    
     pprint.pprint([x for x in sccs if len(x) > 1], width=500)
 
     print '### reading Boost library metadata...'
