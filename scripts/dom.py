@@ -42,6 +42,17 @@ class metatag(object.__class__):
     def __getattr__(self, name):
         return tag(name)
 
+# For debugging purposes only
+def dump(x, indent=0):
+     if isinstance(x, tag):
+         dump(x.element,indent)
+     elif isinstance(x, _Element):
+         print indent*' '+'_.'+x.tag, x.attrib, (x.text,x.tail)
+         for y in x:
+             dump(y, indent+2)
+     else:
+         print repr(x)
+
 class tag(object):
     __metaclass__ = metatag
 
