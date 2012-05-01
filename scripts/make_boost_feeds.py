@@ -168,6 +168,9 @@ def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_m
     sign_feed(feed_path)
 
 def run(dump_dir, feed_dir, source_root, site_metadata_file):
+    version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
+    print '### new version =', version
+
     print '### deleting old feeds...'
     for old_feed in glob.glob(os.path.join(feed_dir,'*.xml')):
         if Path(old_feed).name != 'CMakeLists.xml':
