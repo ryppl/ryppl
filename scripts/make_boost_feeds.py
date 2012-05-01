@@ -16,6 +16,8 @@ from uuid import uuid4 as make_uuid
 from archive import Archive
 from sign_feed import *
 import threadpool
+from read_dumps import read_dumps
+from warnings import warn
 
 def content_length(uri):
     request = urllib2.Request(uri)
@@ -239,15 +241,6 @@ class Generate(object):
             if Path(old_feed).name != 'CMakeLists.xml':
                 os.unlink(old_feed)
 
-    def _read_dumps(self):
-        print '### collecting all dumps...'
-        self.dumps = {}
-        for cmake_dump_file in glob.glob(os.path.join(self.dump_dir,'*.xml')):
-            cmake_dump = ElementTree()
-            cmake_dump.parse(cmake_dump_file)
-            camel_name = Path(cmake_dump_file).namebase
-            self.dumps[camel_name] = cmake_dump
-
     def _identify_binary_libs(self):
         print '### identifying binary libraries:'
         self.binary_libs = set(
@@ -284,7 +277,7 @@ class Generate(object):
         self.feed_dir = feed_dir
         self.source_root = source_root
 
-        self._read_dumps()
+        self.dumps = read_dumps(self.dump_dir)
 
         # Make sure there are no modularity violations
         self._check_for_modularity_errors()
