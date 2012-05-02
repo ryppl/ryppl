@@ -29,20 +29,15 @@ def split_package_prefix(package_name):
             return prefix, package_name[n:]
     return None, package_name
 
-def requirement(package_name):
-    prefix, basename = split_package_prefix(package_name)
-    return (
-        'http://ryppl.github.com/feeds/%s%s-dev.xml'
-        % ((prefix.lower() + '/' if prefix else ''), basename)
-      , package_name + '_DIR')
+def cmake_package_to_feed_uri(cmake_package_name, component):
+    prefix, basename = split_package_prefix(cmake_package_name)
 
-def get_build_requirements(cmake_dump):
-    requirements = set()
-    for fp in cmake_dump.findall('find-package'):
-        args = fp.findall('arg')
-        requirements.add(requirement(args[0].text))
-
-    return sorted(requirements)
+    return 'http://ryppl.github.com/feeds/%s%s%s.xml' \
+        % (
+              (prefix.lower() + '/' if prefix else '')
+            , basename
+            , ('' if component == 'bin' else '-'+component)
+          )
 
 def compile_command(component, repo_name):
     return _.command(name='compile') [
@@ -87,7 +82,7 @@ class GenerateBoost(object):
             self.tasks.add_task(self._write_src_feed)
             self.tasks.add_task(self._write_dev_feed)
             if cmake_name in self.binary_libs:
-                self._write_binary_feeds()
+                self._write_preinstall_feed()
         
         def _feed_name(self, component):
             return self.repo + ('' if component == 'bin' else '-'+component) + '.xml'
@@ -193,8 +188,39 @@ class GenerateBoost(object):
               ]
           )
 
-        def _write_binary_feeds(self):
-            pass
+        def _write_preinstall_feed(self):
+            self._write_feed(
+                'preinstall'
+              , self._implementation('*-src') [
+                    self._empty_zipball
+                    ]
+              , _.command(name='compile') [
+                    _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml') [
+                        _.version(**{'not-before':'0.8-pre-201205011504'})
+                      , _.arg[ 'preinstall' ]
+                    ]
+                  , _.requires(interface=self._feed_uri('src')) [
+                        _.environment(insert='.', mode='replace', name='SRCDIR')
+                    ]
+                  , self._cmakelists_overlay()
+                  , self._build_requirements()
+              ]
+          )
+
+        def _build_requirements(self):
+            """Return a set of (feedURI, CMakeVariable) pairs that can
+            be used to generate build requirements"""
+            requirements = []
+            for fp in self.cmake_dump.findall('find-package'):
+                cmake_package = fp.find('arg').text
+                feed_uri = cmake_package_to_feed_uri(cmake_package, 'dev')
+                requirements.append(
+                    _.requires(interface=feed_uri) [
+                        _.environment(insert='.', mode='replace', name=cmake_package+'_DIR')
+                    ]
+                )
+            return requirements
+
 
     def _delete_old_feeds(self):
         print '### deleting old feeds...'
