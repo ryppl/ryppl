@@ -214,7 +214,9 @@ class GenerateBoost(object):
             """Return a set of (feedURI, CMakeVariable) pairs that can
             be used to generate build requirements"""
             requirements = []
-            for fp in self.cmake_dump.findall('find-package'):
+            for fp in (
+                self.cmake_dump.findall('find-package')
+              + self.cmake_dump.findall('find-package-indirect')):
                 cmake_package = fp.find('arg').text
                 feed_uri = self.cmake_package_to_feed_uri(cmake_package, 'dev')
                 requirements.append(
