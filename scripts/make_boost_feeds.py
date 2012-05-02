@@ -29,16 +29,6 @@ def split_package_prefix(package_name):
             return prefix, package_name[n:]
     return None, package_name
 
-def cmake_package_to_feed_uri(cmake_package_name, component):
-    prefix, basename = split_package_prefix(cmake_package_name)
-
-    return 'http://ryppl.github.com/feeds/%s%s%s.xml' \
-        % (
-              (prefix.lower() + '/' if prefix else '')
-            , basename
-            , ('' if component == 'bin' else '-'+component)
-          )
-
 def compile_command(component, repo_name):
     return _.command(name='compile') [
             _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml')
@@ -59,6 +49,19 @@ def compile_command(component, repo_name):
         ]
 
 class GenerateBoost(object):
+
+    def cmake_package_to_feed_uri(self, cmake_package_name, component):
+        prefix, basename = split_package_prefix(cmake_package_name)
+
+        dump = self.dumps.get(cmake_package_name)
+        repo = (dump.findtext('source-directory') - self.source_root) if dump else basename.lower()
+        
+        return 'http://ryppl.github.com/feeds/%s%s%s.xml' \
+            % (
+                  (prefix.lower() + '/' if prefix else '')
+                , repo
+                , ('' if component == 'bin' else '-'+component)
+              )
 
     class GenerateRepo(object):
                 
@@ -213,7 +216,7 @@ class GenerateBoost(object):
             requirements = []
             for fp in self.cmake_dump.findall('find-package'):
                 cmake_package = fp.find('arg').text
-                feed_uri = cmake_package_to_feed_uri(cmake_package, 'dev')
+                feed_uri = self.cmake_package_to_feed_uri(cmake_package, 'dev')
                 requirements.append(
                     _.requires(interface=feed_uri) [
                         _.environment(insert='.', mode='replace', name=cmake_package+'_DIR')
