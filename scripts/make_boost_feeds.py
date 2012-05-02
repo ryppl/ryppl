@@ -9,7 +9,7 @@ from datetime import date, datetime
 from warnings import warn
 from subprocess import check_output, check_call, Popen, PIPE
 from xml.etree.cElementTree import ElementTree, Element
-import dom, path
+from dom import dashtag, xml_document, xmlns
 from path import Path
 import boost_metadata
 from uuid import uuid4 as make_uuid
@@ -18,6 +18,7 @@ from sign_feed import *
 import threadpool
 from read_dumps import read_dumps
 from warnings import warn
+_ = dashtag
 
 def content_length(uri):
     request = urllib2.Request(uri)
@@ -67,7 +68,6 @@ def interface_head(
       , 'doc':'documentation'
         }
 
-    _ = dom.dashtag
     return _.interface(
         uri=uri
       , xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
@@ -79,34 +79,9 @@ def interface_head(
       , _.icon(href=icon_png, type="image/png")
       ]
 
-
-def boost_interface_head(repo, brand_name, component):
-    return interface_head('http://ryppl.github.com/feeds/boost/%s.xml'%repo, brand_name, component)
-
-def boost_group(version, arch):
-    _ = dom.dashtag
-    return _.group(license='OSI Approved :: Boost Software License 1.0 (BSL-1.0)')[
-        _.implementation(arch=arch
-                          , id=str(make_uuid())
-                          , released=date.today().isoformat()
-                          , stability='testing'
-                          , version=version
-                            )
-        ]
-
-def boost_archive(repo, git_dir):
-    git_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=git_dir).strip()
-    archive_uri = 'http://nodeload.github.com/boost-lib/' + repo + '/zipball/' + git_revision
-    z = Archive(archive_uri, repo, git_revision)
-
-    _ = dom.dashtag
-    return ( 
-        _.archive(extract=z.subdir, href=archive_uri, size=str(z.size), type='application/zip')
-      , _.manifest_digest(sha1new=z.digest)
-    )
+BSL_1_0 = 'OSI Approved :: Boost Software License 1.0 (BSL-1.0)'
 
 def compile_command(component, repo_name):
-    _ = dom.dashtag
     return _.command(name='compile') [
             _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml')
             [
@@ -120,7 +95,7 @@ def compile_command(component, repo_name):
 
           , [  _.requires(interface=uri)[ _.environment(insert='.', mode='replace', name=var) ]
                 for uri,var in build_requirements ]
-          , [ dom.xmlns.compile.implementation(arch='*-*')
+          , [ xmlns.compile.implementation(arch='*-*')
               if component == 'dev' and not cmake_dump.findall('libraries/library')
               else [] ]
         ]
@@ -151,25 +126,31 @@ def write_feed(cmake_dump, feed_dir, repo_name, camel_name, component, lib_metad
         repo_name, 
         git_dir=cmake_dump.findtext('source-directory'), 
         arch=arch, version=version)
+
+    implementation = group.element[-1]
     if component == 'src':
-        group <<= boost_archive(repo_name, srcdir, )
+        implementation <<= boost_archive(repo_name, srcdir, )
 
     if arch == '*-src':
-        group <<= compile_command(component)
+        implementation <<= compile_command(component)
 
     iface <<= group
 
     iface.indent()
 
     feed_path = feed_dir/feed_name
-    dom.xml_document(iface).write(feed_path, encoding='utf-8', xml_declaration=True)
+    xml_document(iface).write(feed_path, encoding='utf-8', xml_declaration=True)
 
     sign_feed(feed_path)
 
 
-class Generate(object):
+class GenerateBoost(object):
 
     class GenerateRepo(object):
+                
+        def __getattr__(self, name):
+            return getattr(self.ctx,name)
+
         def __init__(self, ctx, cmake_name):
             self.ctx = ctx
             self.cmake_name = cmake_name
@@ -189,17 +170,20 @@ class Generate(object):
             if cmake_name in self.binary_libs:
                 self._write_binary_feeds()
         
-        def __getattr__(self, name):
-            return getattr(self.ctx,name)
-
+        def _feed_name(self, component):
+            return self.repo + ('' if component == 'bin' else '-'+component) + '.xml'
+            
         def _write_feed(self, component, interface):
             interface.indent()
-            feed_path = self.feed_dir/self.repo + ('' if component == 'bin' else '-'+component) + '.xml'
-            dom.xml_document(interface).write(feed_path, encoding='utf-8', xml_declaration=True)
+            feed_path = self.feed_dir/self._feed_name(component)
+            xml_document(interface).write(feed_path, encoding='utf-8', xml_declaration=True)
             sign_feed(feed_path)
 
+        def _feed_uri(self, component):
+            return 'http://ryppl.github.com/feeds/boost/'+self._feed_name(component)
+
         def _interface(self, component):
-            interface = interface_head('http://ryppl.github.com/feeds/boost/%s.xml'%self.repo, self.brand_name, component)
+            interface = interface_head(self._feed_uri(component), self.brand_name, component)
             
             # These tags can be dragged directly across from our lib_metadata
             for tag in 'summary','homepage','dc:author','description','category':
@@ -207,37 +191,68 @@ class Generate(object):
 
             return interface
 
+        def _implementation(self, arch):
+            return _.implementation(
+                arch=arch, id=make_uuid(), released=date.today().isoformat(), 
+                stability='testing', version=self.version)
+
+        def _git_snapshot(self, arch):
+            git_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=self.srcdir).strip()
+            archive_uri = 'http://nodeload.github.com/boost-lib/' + self.repo + '/zipball/' + git_revision
+            zipball = Archive(archive_uri, self.repo, git_revision)
+
+            return self._implementation(arch) [
+                _.archive(extract=zipball.subdir, href=archive_uri, size=zipball.size, type='application/zip')
+              , _.manifest_digest(sha1new=zipball.digest)
+            ]
+
+        _empty_zipball = (
+            _.archive(
+                extract='empty', href='http://ryppl.github.com/feeds/empty.zip'
+              , size=162, type="application/zip"
+            ), 
+            _.manifest_digest(sha1new='da39a3ee5e6b4b0d3255bfef95601890afd80709')
+            )
+
+
         def _write_src_feed(self):
             self._write_feed(
                 'src'
-                , self._interface('src') [
-                    boost_group(version=self.version, arch='*-*')[
-                        boost_archive(self.repo, self.srcdir)
+              , self._interface('src') [
+                    _.group(license=BSL_1_0) [
+                        self._git_snapshot('*-*')
                         ]
-                    ]
-                )
+                    ])
 
+        def _cmakelists_overlay(self):
+            return _.requires(interface='http://ryppl.github.com/feeds/boost/CMakeLists.xml')[
+                _.environment(insert=self.repo, mode='replace', name='BOOST_CMAKELISTS_OVERLAY')
+            ]
+            
         def _write_dev_feed(self):
             if self.cmake_name in self.binary_libs:
                 return  # don't know what to do for this case yet
 
-            _ = dom.dashtag
             self._write_feed(
                 'dev'
                 , self._interface('dev') [
-                      boost_group(version=self.version, arch='*-src')[
-                          _.command(name='compile') [
-                              _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml') [
-                                  _.version(**{'not-before':'0.8-pre-201205011504'})
-                                , _.arg[ 'headers' ]
-                              ]
-                            , _.requires(interface='http://ryppl.github.com/feeds/boost/CMakeLists.xml')[
-                                  _.environment(insert=self.repo, mode='replace', name='BOOST_CMAKELISTS_OVERLAY')
-                              ]
-                            , dom.xmlns.compile.implementation(arch='*-*')
-                          ]
+                    _.group(license=BSL_1_0) [
+                        self._implementation('*-src') [
+                            self._empty_zipball
+                            ]
+                      , _.command(name='compile') [
+                            _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml') [
+                                _.version(**{'not-before':'0.8-pre-201205011504'})
+                              , _.arg[ 'headers' ]
+                            ]
+                          , _.requires(interface=self._feed_uri('src')) [
+                                _.environment(insert='.', mode='replace', name='SRCDIR')
+                            ]
+                          , self._cmakelists_overlay()
+                          , xmlns.compile.implementation(arch='*-*')
                       ]
-                  ])
+                  ]
+              ])
 
         def _write_binary_feeds(self):
             pass
@@ -316,7 +331,7 @@ if __name__ == '__main__':
     feeds = ryppl / 'feeds'
     lib_db_default = '/Users/dave/src/boost/svn/website/public_html/live/doc/libraries.xml'
 
-    Generate(dump_dir=Path(argv[1] if len(argv) > 1 else feeds/'dumps')
+    GenerateBoost(dump_dir=Path(argv[1] if len(argv) > 1 else feeds/'dumps')
       , feed_dir=Path(argv[2] if len(argv) > 2 else feeds/'boost')
       , source_root=Path(argv[3] if len(argv) > 3 else ryppl/'boost-zero'/'boost')
       , site_metadata_file=Path(argv[4] if len(argv) > 4 else lib_db_default)
