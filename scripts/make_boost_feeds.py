@@ -4,10 +4,10 @@
 # accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt
 
-import glob, re, os, sys, shutil, urllib2
+import glob, os, sys
 from datetime import date, datetime
 from warnings import warn
-from subprocess import check_output, check_call, Popen, PIPE
+from subprocess import check_output
 from xml.etree.cElementTree import ElementTree, Element
 from dom import dashtag, xml_document, xmlns
 from path import Path
@@ -17,18 +17,7 @@ from archive import Archive
 from sign_feed import *
 import threadpool
 from read_dumps import read_dumps
-from warnings import warn
 _ = dashtag
-
-def content_length(uri):
-    request = urllib2.Request(uri)
-    request.get_method = lambda : 'HEAD'
-    response = urllib2.urlopen(request)
-    length = response.info().get('content-length')
-    if length:
-        return int(length)
-    else:
-        return len(urllib2.urlopen(uri).read())
 
 package_prefixes = ['Boost', 'Ryppl']
 def split_package_prefix(package_name):
@@ -55,32 +44,6 @@ def get_build_requirements(cmake_dump):
 
     return sorted(requirements)
 
-def interface_head(
-    uri, brand_name, component, 
-    icon_png="http://svn.boost.org/svn/boost/website/public_html/live/gfx/boost-dark-trans.png"):
-
-    human_component = {
-        'bin':'binaries'
-      , 'src':'source code'
-      , 'dev':'development files'
-      , 'dbg':'debugging version'
-      , 'preinstall':'built state'
-      , 'doc':'documentation'
-        }
-
-    return _.interface(
-        uri=uri
-      , xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
-      , **{
-            'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
-          , 'xmlns:dc':'http://purl.org/dc/elements/1.1/'
-            })[
-        _.name['%s (%s)' % (brand_name, human_component[component])]
-      , _.icon(href=icon_png, type="image/png")
-      ]
-
-BSL_1_0 = 'OSI Approved :: Boost Software License 1.0 (BSL-1.0)'
-
 def compile_command(component, repo_name):
     return _.command(name='compile') [
             _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml')
@@ -99,50 +62,6 @@ def compile_command(component, repo_name):
               if component == 'dev' and not cmake_dump.findall('libraries/library')
               else [] ]
         ]
-
-def write_feed(cmake_dump, feed_dir, repo_name, camel_name, component, lib_metadata, version):
-    build_requirements = get_build_requirements(cmake_dump)
-    lib_name = os.path.basename(srcdir)
-
-    prefix,feed_name_base = split_package_prefix(camel_name)
-    brand_name = prefix + '.' + feed_name_base if prefix else feed_name_base
-
-    suffix = '-%s'%component if component != 'bin' else ''
-    feed_name = feed_name_base + suffix + '.xml'
-
-    # prepare the header of the root element
-    iface = interface_head(
-        'http://ryppl.github.com/feeds/boost/' + feed_name
-      , brand_name, component)
-
-    # These tags can be dragged directly across from our lib_metadata
-    for tag in 'summary','homepage','dc:author','description','category':
-        iface <<= lib_metadata.findall(tag)
-
-    arch = '*-*' if component in ['src'] else '*-src'
-    # arch = '*-src'
-
-    group = boost_group(
-        repo_name, 
-        git_dir=cmake_dump.findtext('source-directory'), 
-        arch=arch, version=version)
-
-    implementation = group.element[-1]
-    if component == 'src':
-        implementation <<= boost_archive(repo_name, srcdir, )
-
-    if arch == '*-src':
-        implementation <<= compile_command(component)
-
-    iface <<= group
-
-    iface.indent()
-
-    feed_path = feed_dir/feed_name
-    xml_document(iface).write(feed_path, encoding='utf-8', xml_declaration=True)
-
-    sign_feed(feed_path)
-
 
 class GenerateBoost(object):
 
@@ -182,9 +101,29 @@ class GenerateBoost(object):
         def _feed_uri(self, component):
             return 'http://ryppl.github.com/feeds/boost/'+self._feed_name(component)
 
+        _human_component = {
+            'bin':'binaries'
+            , 'src':'source code'
+            , 'dev':'development files'
+            , 'dbg':'debugging version'
+            , 'preinstall':'built state'
+            , 'doc':'documentation'
+            }
+
+        _boost_icon_png='http://svn.boost.org/svn/boost/website/public_html/live/gfx/boost-dark-trans.png'
+
         def _interface(self, component):
-            interface = interface_head(self._feed_uri(component), self.brand_name, component)
-            
+            interface = _.interface(
+                uri=self._feed_uri(component)
+              , xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
+              , **{
+                    'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
+                  , 'xmlns:dc':'http://purl.org/dc/elements/1.1/'
+                    })[
+                _.name['%s (%s)' % (self.brand_name, self._human_component[component])]
+              , _.icon(href=self._boost_icon_png, type="image/png")
+              ]
+
             # These tags can be dragged directly across from our lib_metadata
             for tag in 'summary','homepage','dc:author','description','category':
                 interface <<= self.boost_metadata.findall(tag)
@@ -215,11 +154,12 @@ class GenerateBoost(object):
             )
 
 
+        _BSL_1_0 = 'OSI Approved :: Boost Software License 1.0 (BSL-1.0)'
         def _write_src_feed(self):
             self._write_feed(
                 'src'
               , self._interface('src') [
-                    _.group(license=BSL_1_0) [
+                    _.group(license=self._BSL_1_0) [
                         self._git_snapshot('*-*')
                         ]
                     ])
@@ -236,7 +176,7 @@ class GenerateBoost(object):
             self._write_feed(
                 'dev'
                 , self._interface('dev') [
-                    _.group(license=BSL_1_0) [
+                    _.group(license=self._BSL_1_0) [
                         self._implementation('*-src') [
                             self._empty_zipball
                             ]
