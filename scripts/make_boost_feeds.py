@@ -92,7 +92,12 @@ class GenerateBoost(object):
         def _feed_name(self, component):
             return self.repo + ('' if component == 'bin' else '-'+component) + '.xml'
             
-        def _write_feed(self, component, interface):
+        def _write_feed(self, component, *contents):
+            interface = self._interface(component)[ 
+                _.group(license=self._BSL_1_0) [
+                    contents 
+                ]
+            ]
             interface.indent()
             feed_path = self.feed_dir/self._feed_name(component)
             xml_document(interface).write(feed_path, encoding='utf-8', xml_declaration=True)
@@ -158,11 +163,8 @@ class GenerateBoost(object):
         def _write_src_feed(self):
             self._write_feed(
                 'src'
-              , self._interface('src') [
-                    _.group(license=self._BSL_1_0) [
-                        self._git_snapshot('*-*')
-                        ]
-                    ])
+               , self._git_snapshot('*-*')
+                )
 
         def _cmakelists_overlay(self):
             return _.requires(interface='http://ryppl.github.com/feeds/boost/CMakeLists.xml')[
@@ -175,24 +177,21 @@ class GenerateBoost(object):
 
             self._write_feed(
                 'dev'
-                , self._interface('dev') [
-                    _.group(license=self._BSL_1_0) [
-                        self._implementation('*-src') [
-                            self._empty_zipball
-                            ]
-                      , _.command(name='compile') [
-                            _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml') [
-                                _.version(**{'not-before':'0.8-pre-201205011504'})
-                              , _.arg[ 'headers' ]
-                            ]
-                          , _.requires(interface=self._feed_uri('src')) [
-                                _.environment(insert='.', mode='replace', name='SRCDIR')
-                            ]
-                          , self._cmakelists_overlay()
-                          , xmlns.compile.implementation(arch='*-*')
-                      ]
-                  ]
-              ])
+              , self._implementation('*-src') [
+                    self._empty_zipball
+                    ]
+              , _.command(name='compile') [
+                    _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml') [
+                        _.version(**{'not-before':'0.8-pre-201205011504'})
+                      , _.arg[ 'headers' ]
+                    ]
+                  , _.requires(interface=self._feed_uri('src')) [
+                        _.environment(insert='.', mode='replace', name='SRCDIR')
+                    ]
+                  , self._cmakelists_overlay()
+                  , xmlns.compile.implementation(arch='*-*')
+              ]
+          )
 
         def _write_binary_feeds(self):
             pass
