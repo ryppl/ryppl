@@ -9,24 +9,9 @@ from subprocess import check_output, check_call, Popen, PIPE
 from xml.etree.cElementTree import ElementTree, Element
 from path import Path
 from read_dumps import read_dumps
-
-def direct_successors(all_dumps, v):
-    return set( fp.findtext('arg') for fp in all_dumps[v].findall('find-package') )
-
-def indirect_successors(all_dumps, v):
-    return set( fp.findtext('arg') for fp in all_dumps[v].findall('find-package-indirect') )
-
-def usage_dependencies(all_dumps, v):
-    return set( d.text for d in all_dumps[v].findall('depends/dependency') )
-
-def usage_successors(all_dumps, v):
-    succ = set()
-    for s in direct_successors(all_dumps, v):
-        succ |= set(x.text for x in all_dumps[v].findall('depends/dependency'))
-    return succ
-
-def successors(all_dumps, v):
-    return direct_successors(all_dumps,v) | indirect_successors(all_dumps,v)
+from depgraph import *
+from transitive import *
+from display_graph import *
 
 colors=('red','green','orange', 'blue', 'indigo', 'violet')
 
@@ -34,13 +19,11 @@ def first(seq):
     return iter(seq).next()
 
 def run(dump_dir=None):
-    all_dumps = read_dumps(dump_dir)
-    g = all_dumps
+    g = dumps = read_dumps(dump_dir)
 
     # find all strongly-connected components
     from SCC import SCC
     sccs = SCC(str, lambda i: successors(g, i)).getsccs(g)
-
     # map each vertex to a scc set
     scc = {}
     for component in sccs:
@@ -49,6 +32,7 @@ def run(dump_dir=None):
             scc[u] = s
 
     long_sccs = [s for s in sccs if len(s) > 1]
+    print 'long_sccs=', long_sccs
 
     # color each vertex in an SCC of size > 1 according to its SCC
     color = {}
@@ -56,58 +40,29 @@ def run(dump_dir=None):
         for u in s:
             color[u] = colors[i]
 
-    V = set(u for u in g if successors(g,u))
-    t_redux = dict((s, set(t for t in successors(g, s) if t in V)) for s in V)
+    V = g #set(u for u in g if successors(g,u))
+    direct_graph = to_mutable_graph(g, direct_successors, V.__contains__)
+    full_graph = to_mutable_graph(g, vertex_filter=V.__contains__)
 
-    for component in sccs:
-        representative = first(component)
-        if representative not in V:
-            continue
-        
-        # Keep only one representative link to each other component
-        visited = set()
-        scc_s = scc[representative]
+    t_redux = to_mutable_graph(g, usage_successors, vertex_filter=V.__contains__)
+    inplace_transitive_reduction(t_redux)
 
-        for s in component:
-            succs = t_redux[s]
-            for t in list(succs):
-                scc_t = scc[t]
-                if id(scc_t) in visited:
-                    succs.remove(t)
-                elif id(scc_t) != id(scc_s):
-                    visited.add(id(scc_t))
-                
-        N = len(scc_s)
-        if N > 1:
-            # replace SCCs with simple cycles
-            next = dict((component[i], component[(i+1)%N]) for i in range(N))
-            for u in component:
-                t_redux[u] -= set(v for v in component if v != next[u])
-                t_redux[u].add(next[u])
-    
-    direct = dict((s, set(t for t in direct_successors(g, s) if t in V)) for s in V)
+    class Format(object):
+        def vertex_attributes(self, s):
+            ret = [color[s]] if s in color else []
+            if dumps[s].getroot().findall('libraries/library') is not None:
+                ret.append('shape=box3d')
+            return ret
 
-    print 'digraph boost {'
-    print 'splines=true;'
-    print 'layout=dot;'
-    #print 'nodesep=3;'
-    print 'overlap=scalexy;'
-    for s in V:
-        c = color.get(s,'black')
+        def edge_attributes(self, s, t):
+            if t in direct_graph[s]:
+                return ['style=bold']
+            elif t in t_redux[s]:
+                return ['style=dashed','arrowhead=open','color=blue']
+            else:
+                return ['style=dotted','color=gray']
 
-        if all_dumps[s].find('libraries/library') is not None:
-            print s, '[shape=box3d,color=%s]'%c
-        else:
-            print s, '[color=%s]'%c
-
-        direct_edges = direct.get(s,set())
-        for t in direct_edges:
-            print s,'->', t,'[style=bold]'
-
-        for t in t_redux.get(s,set()):
-            if t not in direct_edges:
-                print s,'->', t,'[style=dashed,arrowhead=open,color=blue]'
-    print '}'
+    show_digraph(full_graph, formatter=Format(), splines='true', layout='dot', overlap='false')
 
 if __name__ == '__main__':
     argv = sys.argv
