@@ -89,6 +89,7 @@ class GenerateBoost(object):
         def __init__(self, ctx, cmake_name):
             self.ctx = ctx
             self.cmake_name = cmake_name
+            self.in_cluster = self.cluster_map.get(cmake_name)
             self.cmake_dump = self.dumps[cmake_name]
             self.srcdir = self.cmake_dump.findtext('source-directory')
             self.git_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=self.srcdir).strip()
@@ -101,7 +102,7 @@ class GenerateBoost(object):
 
             self.tasks.add_task(self._write_src_feed)
 
-            if self.has_binaries and not self.cmake_name in self.clusters:
+            if self.has_binaries and not self.in_cluster:
                 self.tasks.add_task(self._write_preinstall_feed)
 
             self.tasks.add_task(self._write_dev_feed)
@@ -167,15 +168,21 @@ class GenerateBoost(object):
                 )
 
         def _write_dev_feed(self):
+            if self.in_cluster:
+                source_feed = boost_feed_uri(self._cluster_feed_name(self.in_cluster))
+                _0cmake_args = ['dev', self.cmake_name]
+            else:
+                source_feed = self._feed_uri('preinstall' if self.has_binaries else 'src')
+                _0cmake_args = ['dev' if self.has_binaries else 'headers']
             self._write_feed(
                 'dev'
               , self._implementation('*-src') [
                     self._empty_zipball
                     ]
               , _.command(name='compile') [
-                    self._0cmake_runner( 'dev' if self.has_binaries else 'headers' )
+                    self._0cmake_runner( *_0cmake_args )
                   , _.requires(
-                        interface=self._feed_uri('preinstall' if self.has_binaries else 'src')
+                        interface=source_feed
                     ) [
                         _.environment(insert='.', mode='replace', name='SRCDIR')
                     ]
@@ -249,7 +256,9 @@ class GenerateBoost(object):
                         for cmake_name in cluster
                     ]
                   , self._dev_requirements(
-                        itertools.chain(*(self._build_dependencies(x) for x in cluster)))
+                        dep for x in cluster for dep in self._build_dependencies(x)
+                        if dep not in cluster
+                        )
                     ]
                   , self._cmakelists_overlay()
                 ]
@@ -327,9 +336,9 @@ class GenerateBoost(object):
                 + repr(self.clusters))
 
         # Map each cmake module into its cluster
-        self.cluster = dict(
+        self.cluster_map = dict(
             (lib, cluster) for cluster in self.clusters for lib in cluster)
-
+        
     def __init__(self, dump_dir, feed_dir, source_root, site_metadata_file):
         self.dump_dir = dump_dir
         self.feed_dir = feed_dir
