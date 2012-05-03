@@ -7,9 +7,9 @@ class Formatter:
     def edge_attributes(self, s, t):
         return None
 
-def digraph(g, layout='neato', splines=True, overlap='scalexy', formatter=Formatter()):
+def digraph(g, formatter=Formatter(), **kw):
     result = ['digraph G {']
-    result += ['    %s=%s;' % (name,locals()[name]) for name in 'layout', 'splines', 'overlap']
+    result += ['    %s=%s;' % kv for kv in kw.items()]
 
     for s in g:
         line = '    %s' % s
@@ -42,7 +42,7 @@ def show_graphviz(text):
 def show_digraph(g, **kw):
     show_graphviz(digraph(g, **kw))
     
-def show_digraph2(g0, g1, colors=['red','green','black']):
+def show_digraph2(g0, g1, colors=['red','green','black'], **kw):
     class Format(Formatter):
         def edge_attributes(self,s,t):
             index = (1 if t in g0.get(s,[]) else 0) + (2 if t in g1.get(s,[]) else 0)
@@ -51,7 +51,7 @@ def show_digraph2(g0, g1, colors=['red','green','black']):
         (s, set(g0.get(s,[]))|set(g1.get(s,[])) )
         for s in set(g0)|set(g1))
 
-    show_digraph(g3, formatter=Format())
+    show_digraph(g3, formatter=Format(), **kw)
 
 
 if __name__ == '__main__':
