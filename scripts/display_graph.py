@@ -7,8 +7,9 @@ class Formatter:
     def edge_attributes(self, s, t):
         return None
 
-def digraph(g, formatter=Formatter()):
-    result = ['digraph G {','    splines=true;','    overlap=scalexy;']
+def digraph(g, layout='neato', splines=True, overlap='scalexy', formatter=Formatter()):
+    result = ['digraph G {']
+    result += ['    %s=%s;' % (name,locals()[name]) for name in 'layout', 'splines', 'overlap']
 
     for s in g:
         line = '    %s' % s
@@ -27,27 +28,44 @@ def digraph(g, formatter=Formatter()):
     result.append('}')
     return '\n'.join(result)
 
-def show_digraph(g, layout='neato', formatter=Formatter()):
-    graph = tempfile.NamedTemporaryFile(suffix='.gv')
-    graph.write(digraph(g))
+def show_graphviz(text):
+    graph = tempfile.NamedTemporaryFile(suffix='.gv',delete=False)
+    graph.write(text)
     graph.flush()
 
     svg = tempfile.NamedTemporaryFile(suffix='.svg', delete=False)
-    print (svg.name,graph.name)
     svg.write(
-        subprocess.check_output(['dot','-Tsvg','-K'+layout,graph.name]))
+        subprocess.check_output(['dot','-Tsvg',graph.name]))
     svg.flush()
     subprocess.check_call(['open',svg.name])
     
-if __name__ == '__main__':
-    g = {}
-    max = 15
-    for x in range(1,max):
-        g[x] = set()
-        for y in range(1,max):
-            if (x*x+y) % 11 == 5:
-                g[x].add(y)
+def show_digraph(g, **kw):
+    show_graphviz(digraph(g, **kw))
+    
+def show_digraph2(g0, g1, colors=['red','green','black']):
+    class Format(Formatter):
+        def edge_attributes(self,s,t):
+            index = (1 if t in g0.get(s,[]) else 0) + (2 if t in g1.get(s,[]) else 0)
+            return ['color='+colors[index-1]]
+    g3 = dict(
+        (s, set(g0.get(s,[]))|set(g1.get(s,[])) )
+        for s in set(g0)|set(g1))
 
+    show_digraph(g3, formatter=Format())
+
+
+if __name__ == '__main__':
+
+    def random_graph(max, a, b):
+        g = {}
+        for x in range(1,max):
+            g[x] = set(y for y in range(1,max) if (x*x+y) % a == b)
+        return g
+    
+    g0 = random_graph(15,11,5)
     import pprint
-    pprint.pprint(g)
-    show_digraph(g,layout='dot')
+    pprint.pprint(g0)
+    show_digraph(g0,layout='dot')
+    g1 = random_graph(11,7,5)
+    show_digraph(g1)
+    show_digraph2(g0,g1)
