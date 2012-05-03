@@ -11,18 +11,18 @@ from path import Path
 from read_dumps import read_dumps
 
 def direct_successors(all_dumps, v):
-    return set( fp.findtext('arg') for fp in all_dumps.get(v, Element('x')).findall('find-package') )
+    return set( fp.findtext('arg') for fp in all_dumps[v].findall('find-package') )
 
 def indirect_successors(all_dumps, v):
-    return set( fp.findtext('arg') for fp in all_dumps.get(v, Element('x')).findall('find-package-indirect') )
+    return set( fp.findtext('arg') for fp in all_dumps[v].findall('find-package-indirect') )
 
 def usage_dependencies(all_dumps, v):
-    return set( d.text for d in all_dumps.get(v, Element('x')).findall('depends/dependency') )
+    return set( d.text for d in all_dumps[v].findall('depends/dependency') )
 
 def usage_successors(all_dumps, v):
     succ = set()
     for s in direct_successors(all_dumps, v):
-        succ |= set(x.text for x in all_dumps.get(v, Element('x')).findall('depends/dependency'))
+        succ |= set(x.text for x in all_dumps[v].findall('depends/dependency'))
     return succ
 
 def successors(all_dumps, v):

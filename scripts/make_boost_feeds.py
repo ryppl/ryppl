@@ -318,10 +318,10 @@ class GenerateBoost(object):
         def successors(v):
             return set(
                 fp.findtext('arg') 
-                for fp in self.dumps.get(v, Element('x')).findall('find-package')
+                for fp in self.dumps[v].findall('find-package')
             ) | set(
                 fp.findtext('arg') 
-                for fp in self.dumps.get(v, Element('x')).findall('find-package-indirect'))
+                for fp in self.dumps[v].findall('find-package-indirect'))
 
         # Find all Strongly-Connected Components (SCCs) that contain
         # multiple vertices.  Each of these must be built as a unit
