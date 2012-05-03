@@ -57,16 +57,16 @@ class GenerateBoost(object):
             self.git_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=self.srcdir).strip()
             self.repo = str(self.srcdir - self.source_root)
             self.boost_metadata = boost_metadata.lib_metadata(self.repo, self.boost_metadata)
-
+            self.has_binaries = cmake_name in self.binary_libs
             prefix,self.feed_name_base = split_package_prefix(cmake_name)
             self.brand_name = prefix + '.' + self.feed_name_base if prefix else self.feed_name_base
 
             print '##', self.brand_name
 
             self.tasks.add_task(self._write_src_feed)
-            self.tasks.add_task(self._write_dev_feed)
-            if cmake_name in self.binary_libs:
+            if self.has_binaries:
                 self._write_preinstall_feed()
+            self.tasks.add_task(self._write_dev_feed)
         
         def _feed_name(self, component):
             return self.repo + ('' if component == 'bin' else '-'+component) + '.xml'
@@ -160,11 +160,10 @@ class GenerateBoost(object):
                     self._empty_zipball
                     ]
               , _.command(name='compile') [
-                    _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml') [
-                        _.version(**{'not-before':'0.8-pre-201205011504'})
-                      , _.arg[ 'headers' ]
-                    ]
-                  , _.requires(interface=self._feed_uri('src')) [
+                    self.0cmake_runner( 'dev' if self.has_binaries else 'headers' )
+                  , _.requires(
+                        interface=self._feed_uri('preinstall' if self.has_binaries else 'src')
+                    ) [
                         _.environment(insert='.', mode='replace', name='SRCDIR')
                     ]
                   , self._cmakelists_overlay()
