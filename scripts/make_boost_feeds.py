@@ -166,8 +166,14 @@ class GenerateBoost(object):
                     ) [
                         _.environment(insert='.', mode='replace', name='SRCDIR')
                     ]
-                  , self._cmakelists_overlay()
-                  , xmlns.compile.implementation(arch='*-*')
+                    # If there are no binaries we need a
+                    # CMakeLists.txt overlay and the feed we generate
+                    # is architecture-independent
+                  , [
+                        self._cmakelists_overlay()
+                      , xmlns.compile.implementation(arch='*-*') 
+                    ]
+                    if not self.has_binaries else []
               ]
           )
 
