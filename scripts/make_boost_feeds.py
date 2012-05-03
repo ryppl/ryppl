@@ -29,25 +29,6 @@ def split_package_prefix(package_name):
             return prefix, package_name[n:]
     return None, package_name
 
-def compile_command(component, repo_name):
-    return _.command(name='compile') [
-            _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml')
-            [
-                _.version(**{'not-before':'0.8-pre-201204291303'})
-              , _.arg[ '--component='+component ]
-              , _.arg[ '--overlay=${BOOST_CMAKELISTS_OVERLAY}' ] if component == 'preinstall' else []
-            ]
-          , _.requires(interface='http://ryppl.github.com/feeds/boost/CMakeLists.xml')[
-                _.environment(insert=repo_name, mode='replace', name='BOOST_CMAKELISTS_OVERLAY')
-            ] if component == 'preinstall' else []
-
-          , [  _.requires(interface=uri)[ _.environment(insert='.', mode='replace', name=var) ]
-                for uri,var in build_requirements ]
-          , [ xmlns.compile.implementation(arch='*-*')
-              if component == 'dev' and not cmake_dump.findall('libraries/library')
-              else [] ]
-        ]
-
 class GenerateBoost(object):
 
     def cmake_package_to_feed_uri(self, cmake_package_name, component):
