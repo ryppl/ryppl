@@ -234,8 +234,19 @@ class GenerateBoost(object):
         import pprint
         pprint.pprint(self.binary_libs)
 
-    def _check_for_modularity_errors(self):
-        print '### Checking for modularity violations... ',
+    def _cluster_name(self, cluster):
+        splits = [ split_package_prefix(x) for x in cluster ]
+        prefix = splits[0][0]
+
+        names = cluster
+        if prefix and all(splits[1:][0] == prefix):
+            names = [prefix] + [x[1] for x in splits]
+
+        return '-'.join(names)
+        
+
+    def _find_dependency_cycles(self):
+        print '### Checking for dependency cycles... ',
         from SCC import SCC
 
         def successors(v):
@@ -245,16 +256,22 @@ class GenerateBoost(object):
             ) | set(
                 fp.findtext('arg') 
                 for fp in self.dumps.get(v, Element('x')).findall('find-package-indirect'))
+
+        # Find all Strongly-Connected Components (SCCs) that contain
+        # multiple vertices.  Each of these must be built as a unit
+        self.clusters = set(
+            tuple(s) for s in SCC(str,successors).getsccs(self.dumps) 
+            if len(s) > 1
+            )
         
-        sccs = SCC(str,successors).getsccs(self.dumps)
-        long_sccs = [s for s in sccs if len(s) > 1]
-
-        if any(long_sccs):
+        if len(clusters) > 0:
             warn( 
-            'Build dependency graph contains cycles.  All SCCs:\n'
-            + repr(long_sccs))
+                'Build dependency graph contains cycles.  All SCCs:\n'
+                + repr(long_sccs))
 
-        print 'Done.'
+        # Map each cmake module into its cluster
+        self.cluster = dict(
+            (lib, cluster) for cluster in clusters for lib in cluster)
 
     def __init__(self, dump_dir, feed_dir, source_root, site_metadata_file):
         self.dump_dir = dump_dir
@@ -264,7 +281,7 @@ class GenerateBoost(object):
         self.dumps = read_dumps(self.dump_dir)
 
         # Make sure there are no modularity violations
-        self._check_for_modularity_errors()
+        self._find_dependency_cycles()
         
         self._identify_binary_libs()
 
