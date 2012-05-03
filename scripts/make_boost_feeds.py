@@ -196,7 +196,8 @@ class GenerateBoost(object):
             requirements = []
             for fp in (
                 self.cmake_dump.findall('find-package')
-              + self.cmake_dump.findall('find-package-indirect')):
+              + self.cmake_dump.findall('find-package-indirect')
+            ):
                 cmake_package = fp.find('arg').text
 
                 # Dumps currently can contain self-loops; we have to
