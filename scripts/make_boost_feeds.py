@@ -198,12 +198,16 @@ class GenerateBoost(object):
                 self.cmake_dump.findall('find-package')
               + self.cmake_dump.findall('find-package-indirect')):
                 cmake_package = fp.find('arg').text
-                feed_uri = self.cmake_package_to_feed_uri(cmake_package, 'dev')
-                requirements.append(
-                    _.requires(interface=feed_uri) [
-                        _.environment(insert='.', mode='replace', name=cmake_package+'_DIR')
-                    ]
-                )
+
+                # Dumps currently can contain self-loops; we have to
+                # eliminate those or 0compile loops infinitely.  
+                if cmake_package != self.cmake_name:
+                    feed_uri = self.cmake_package_to_feed_uri(cmake_package, 'dev')
+                    requirements.append(
+                        _.requires(interface=feed_uri) [
+                            _.environment(insert='.', mode='replace', name=cmake_package+'_DIR')
+                        ]
+                    )
             return requirements
 
 
