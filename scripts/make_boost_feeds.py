@@ -360,7 +360,13 @@ class GenerateBoost(object):
         self.boost_metadata = t.getroot().findall('library')
 
         self._delete_old_feeds()
-        self.tasks = threadpool.ThreadPool(8)
+            
+        if True:
+            self.tasks = threadpool.ThreadPool(8)
+        else:
+            class Tasks(object): 
+                def add_task(self, f, *args): return f(*args)
+            self.tasks = Tasks()
 
         for cluster in self.clusters:
             self.tasks.add_task(self._write_cluster_feed, cluster)
