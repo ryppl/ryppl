@@ -3,6 +3,8 @@
 # Distributed under the Boost Software License, Version 1.0.  See
 # accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt
+from lazydict import lazydict
+
 def inplace_transitive_closure(g):
     """g is an adjacency list graph implemented as a dict of sets"""
     done = False
@@ -33,6 +35,15 @@ def inplace_transitive_distance(g):
                     if v2 not in v1s or v1s[v2] > d:
                         v1s[v2] = d
                         done = False
+
+def inplace_transitive_reduction(g):
+    closure = lazydict(set, ((s,ts.copy()) for s,ts in g.items()))
+    inplace_transitive_closure(closure)
+
+    for s,ts in g.items():
+        for t1 in ts.copy():
+            if any(t2 != t1 and t1 in closure[t2] for t2 in ts):
+                ts.remove(t1)
 
 if __name__ == '__main__':
     def random_graph(max, a, b):
