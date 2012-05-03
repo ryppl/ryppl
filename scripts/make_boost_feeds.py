@@ -306,10 +306,11 @@ class GenerateBoost(object):
 
         return '-'.join(names)
         
+    def _src_dir_name(self, cmake_package_name):
+        return Path(self.dumps[cmake_package_name].findtext('source-directory')).name
+
     def _cluster_feed_name(self, cluster):
-        return '-'.join(
-            Path(self.dumps[x].findtext('source-directory')).name for x in cluster
-            ) + '-preinstall'
+        return '-'.join(self._src_dir_name(x) for x in cluster) + '-preinstall'
 
     def _find_dependency_cycles(self):
         print '### Checking for dependency cycles... ',
