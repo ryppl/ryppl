@@ -247,7 +247,7 @@ class GenerateBoost(object):
             [
                 self._implementation('*-src')[self._empty_zipball]
               , _.command(name='compile') [
-                    self._0cmake_runner('cluster', *cluster)
+                    self._0cmake_runner('cluster', *(p+'='+self._src_dir_name(p) for p in cluster))
                   , [
                         _.requires(interface=self.cmake_package_to_feed_uri(cmake_name, 'src'))
                         [
