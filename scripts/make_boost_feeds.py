@@ -149,6 +149,13 @@ class GenerateBoost(object):
             return _.requires(interface='http://ryppl.github.com/feeds/boost/CMakeLists.xml')[
                 _.environment(insert=self.repo, mode='replace', name='BOOST_CMAKELISTS_OVERLAY')
             ]
+
+        def _0cmake_runner(self, **args):
+            return _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml') [
+                _.version(**{'not-before':'0.8-pre-201205011504'})
+                , [ _.arg[ x ] for x in args ]
+            ]
+
             
         def _write_dev_feed(self):
             if self.cmake_name in self.binary_libs:
@@ -160,7 +167,7 @@ class GenerateBoost(object):
                     self._empty_zipball
                     ]
               , _.command(name='compile') [
-                    self.0cmake_runner( 'dev' if self.has_binaries else 'headers' )
+                    self._0cmake_runner( 'dev' if self.has_binaries else 'headers' )
                   , _.requires(
                         interface=self._feed_uri('preinstall' if self.has_binaries else 'src')
                     ) [
@@ -184,10 +191,7 @@ class GenerateBoost(object):
                     self._empty_zipball
                     ]
               , _.command(name='compile') [
-                    _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml') [
-                        _.version(**{'not-before':'0.8-pre-201205011504'})
-                      , _.arg[ 'preinstall' ]
-                    ]
+                    self._0cmake_runner( 'preinstall' )
                   , _.requires(interface=self._feed_uri('src')) [
                         _.environment(insert='.', mode='replace', name='SRCDIR')
                     ]
