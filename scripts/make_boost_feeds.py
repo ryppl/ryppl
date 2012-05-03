@@ -158,9 +158,6 @@ class GenerateBoost(object):
 
             
         def _write_dev_feed(self):
-            if self.cmake_name in self.binary_libs:
-                return  # don't know what to do for this case yet
-
             self._write_feed(
                 'dev'
               , self._implementation('*-src') [
