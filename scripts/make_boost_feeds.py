@@ -90,8 +90,7 @@ class GenerateBoost(object):
             self.ctx = ctx
             self.cmake_name = cmake_name
             self.in_cluster = self.cluster_map.get(cmake_name)
-            self.cmake_dump = self.dumps[cmake_name]
-            self.srcdir = self.cmake_dump.findtext('source-directory')
+            self.srcdir = self.dumps[cmake_name].findtext('source-directory')
             self.git_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=self.srcdir).strip()
             self.repo = str(self.srcdir - self.source_root)
             self.boost_metadata = boost_metadata.lib_metadata(self.repo, self.boost_metadata)
