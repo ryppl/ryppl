@@ -63,7 +63,7 @@ def run(dump_dir=None):
             else:
                 return ['style=dotted','color=gray']
 
-    show_digraph(full_graph, formatter=Format(), splines='true', layout='dot', overlap='false')
+    show_digraph(full_graph, formatter=Format(), ranksep=1.8, splines='true', layout='dot')
 
 if __name__ == '__main__':
     argv = sys.argv
