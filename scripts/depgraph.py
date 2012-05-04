@@ -10,8 +10,12 @@ def usage_successors(dumps, v):
 def successors(dumps, v):
     return direct_successors(dumps,v) | usage_successors(dumps,v)
 
-def to_mutable_graph(dumps, successor_function=successors):
-    return lazydict(set, ((v, successor_function(dumps,v)) for v in dumps))
+def to_mutable_graph(dumps, successor_function=successors, vertex_filter=lambda x:True):
+    return lazydict(
+        set 
+      , ((v, set(x for x in successor_function(dumps,v) 
+                 if vertex_filter(x)))
+         for v in dumps if vertex_filter(v)))
 
 def run(dump_dir=None):
     from read_dumps import read_dumps
