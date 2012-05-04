@@ -40,7 +40,11 @@ def run(dump_dir=None):
         for u in s:
             color[u] = colors[i]
 
-    V = g #set(u for u in g if successors(g,u))
+    if '--all' in sys.argv[1:]:
+        V = g
+    else:
+        V = set(u for u in g if successors(g,u))
+
     direct_graph = to_mutable_graph(g, direct_successors, V.__contains__)
     full_graph = to_mutable_graph(g, vertex_filter=V.__contains__)
 
@@ -66,5 +70,6 @@ def run(dump_dir=None):
     show_digraph(full_graph, formatter=Format(), ranksep=1.8, splines='true', layout='dot')
 
 if __name__ == '__main__':
-    argv = sys.argv
-    run(dump_dir=Path(argv[1]) if len(argv) > 1 else None)
+    argv = set(sys.argv[1:])
+    argv.discard('--all')
+    run(dump_dir=Path(argv.pop()) if len(argv) > 0 else None)
