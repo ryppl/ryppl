@@ -2,10 +2,15 @@ from xml.etree.cElementTree import Element
 from lazydict import lazydict
 
 def direct_successors(dumps, v):
-    return set( fp.findtext('arg') for fp in dumps[v].findall('find-package') )
+    ret = set(fp.findtext('arg') for fp in dumps[v].findall('find-package'))
+    ret.discard(v)
+    return ret
 
 def usage_successors(dumps, v):
-    return set(d.text for succ in direct_successors(dumps,v) for d in dumps[succ].findall('depends/dependency') )
+    ret = set(d.text for succ in direct_successors(dumps,v) 
+              for d in dumps[succ].findall('depends/dependency') )
+    ret.discard(v)
+    return ret
 
 def successors(dumps, v):
     return direct_successors(dumps,v) | usage_successors(dumps,v)
