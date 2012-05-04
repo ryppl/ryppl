@@ -23,6 +23,7 @@ def run(dump_dir=None):
 
     # find all strongly-connected components
     from SCC import SCC
+    successors = Successors(g)
     sccs = SCC(str, lambda i: successors(g, i)).getsccs(g)
     # map each vertex to a scc set
     scc = {}
@@ -46,9 +47,8 @@ def run(dump_dir=None):
         V = set(u for u in g if successors(g,u))
 
     direct_graph = to_mutable_graph(g, direct_successors, V.__contains__)
-    full_graph = to_mutable_graph(g, vertex_filter=V.__contains__)
 
-    t_redux = to_mutable_graph(g, usage_successors, vertex_filter=V.__contains__)
+    t_redux = to_mutable_graph(g, UsageSuccessors(g), vertex_filter=V.__contains__)
     inplace_transitive_reduction(t_redux)
 
     class Format(object):

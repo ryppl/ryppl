@@ -1,25 +1,40 @@
 from xml.etree.cElementTree import Element
 from lazydict import lazydict
+from transitive import *
 
 def direct_successors(dumps, v):
     ret = set(fp.findtext('arg') for fp in dumps[v].findall('find-package'))
     ret.discard(v)
     return ret
 
-def usage_successors(dumps, v):
-    ret = set(d.text for succ in direct_successors(dumps,v) 
-              for d in dumps[succ].findall('depends/dependency') )
-    ret.discard(v)
-    return ret
+class UsageSuccessors(object):
+    def __init__(self, dumps):
+        # Cache the transitive closure of all usage dependencies
+        self.usage_dependencies = to_mutable_graph(
+            dumps, 
+            lambda dumps,v: 
+            set(d.text for d in dumps[v].findall('depends/dependency') ))
+        inplace_transitive_closure(self.usage_dependencies)
 
-def successors(dumps, v):
-    return direct_successors(dumps,v) | usage_successors(dumps,v)
+    def __call__(self, dumps, v):
+        return set(d for s in direct_successors(dumps,v)
+                   for d in self.usage_dependencies[s])
 
-def to_mutable_graph(dumps, successor_function=successors, vertex_filter=lambda x:True):
+class Successors(object):
+    def __init__(self, dumps):
+        self.usage_successors = UsageSuccessors(dumps)
+    def __call__(self, dumps, v):
+        return direct_successors(dumps,v) | self.usage_successors(dumps, v)
+
+def to_mutable_graph(dumps, successor_function=None, vertex_filter=lambda x:True):
+    successor_function = successor_function or Successors(dumps)
+
     return lazydict(
         set 
       , ((v, set(x for x in successor_function(dumps,v) 
-                 if vertex_filter(x)))
+                 if vertex_filter(x) 
+                 and x != v    # filter out self-loops
+                 ))
          for v in dumps if vertex_filter(v)))
 
 def run(dump_dir=None):

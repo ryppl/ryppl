@@ -313,6 +313,8 @@ class GenerateBoost(object):
         print '### Checking for dependency cycles... ',
         from SCC import SCC
 
+        successors = Successors(self.dumps)
+
         # Find all Strongly-Connected Components (SCCs) that contain
         # multiple vertices.  Each of these must be built as a unit
         self.clusters = set(
