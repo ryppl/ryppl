@@ -49,9 +49,10 @@ def run(dump_dir=None):
 
     class Format(object):
         def vertex_attributes(self, s):
-            ret = [color[s]] if s in color else []
-            if dumps[s].getroot().findall('libraries/library') is not None:
-                ret.append('shape=box3d')
+            ret = ['color='+color[s]] if s in color else []
+            ret += ['fontsize=9']
+            if dumps[s].find('libraries/library') is not None:
+                ret+=['shape=box3d','style=bold']
             return ret
 
         def edge_attributes(self, s, t):
