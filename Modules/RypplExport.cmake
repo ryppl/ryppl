@@ -104,7 +104,7 @@ function(ryppl_export)
 
   if(EXPORT_INCLUDE_DIRECTORIES)
     set(_include_dirs "${_include_dirs}@PACKAGE_INCLUDE_DIRS@")
-    set(INSTALL_INCLUDE_DIRS "\n  \"\${PACKAGE_PREFIX_DIR}/include/\"")
+    set(INSTALL_INCLUDE_DIRS "\n  \"\${${PROJECT_NAME}_PREFIX_DIR}/include/\"")
     set(BUILD_INCLUDE_DIRS "")
 
     foreach(path ${EXPORT_INCLUDE_DIRECTORIES})
@@ -193,7 +193,7 @@ function(ryppl_export)
   endforeach(code)
 
   set(BUILD_INIT "")
-  set(INSTALL_INIT "\nget_filename_component(PACKAGE_PREFIX_DIR \"\${CMAKE_CURRENT_LIST_DIR}/\" ABSOLUTE)")
+  set(INSTALL_INIT "\nget_filename_component(${PROJECT_NAME}_PREFIX_DIR \"\${CMAKE_CURRENT_LIST_DIR}/\" ABSOLUTE)")
 
   set(BUILD_FIND_PACKAGE "ryppl_find_package")
   set(INSTALL_FIND_PACKAGE "find_package")
