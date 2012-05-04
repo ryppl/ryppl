@@ -12,6 +12,8 @@ from xml.etree.cElementTree import ElementTree, Element
 from dom import dashtag, xml_document, xmlns
 from path import Path
 import boost_metadata
+from depgraph import *
+from transitive import *
 from uuid import uuid4 as make_uuid
 from archive import Archive
 from sign_feed import *
@@ -96,6 +98,7 @@ class GenerateBoost(object):
             self.boost_metadata = boost_metadata.lib_metadata(self.repo, self.boost_metadata)
             self.has_binaries = cmake_name in self.binary_libs
             self.brand_name = get_brand_name(cmake_name)
+            self.build_dependencies = self.transitive_dependencies[cmake_name]
 
             print '##', self.brand_name
 
@@ -215,15 +218,10 @@ class GenerateBoost(object):
         def _build_requirements(self):
             """Return a set of (feedURI, CMakeVariable) pairs that can
             be used to generate build requirements"""
-            return self._dev_requirements(
-                self._build_dependencies(self.cmake_name))
+            return self._dev_requirements(self.build_dependencies)
 
     def _build_dependencies(self, cmake_package_name):
-        cmake_dump = self.dumps[cmake_package_name]
-        return (fp.find('arg').text for fp in 
-                (cmake_dump.findall('find-package')
-                 + cmake_dump.findall('find-package-indirect'))
-                 if fp.find('arg').text != cmake_package_name)
+        return self.transitive_dependencies[cmake_package_name]
 
     def _implementation(self, arch):
         return _.implementation(
@@ -315,20 +313,12 @@ class GenerateBoost(object):
         print '### Checking for dependency cycles... ',
         from SCC import SCC
 
-        def successors(v):
-            return set(
-                fp.findtext('arg') 
-                for fp in self.dumps[v].findall('find-package')
-            ) | set(
-                fp.findtext('arg') 
-                for fp in self.dumps[v].findall('find-package-indirect'))
-
         # Find all Strongly-Connected Components (SCCs) that contain
         # multiple vertices.  Each of these must be built as a unit
         self.clusters = set(
-            tuple(sorted(s)) for s in SCC(str,successors).getsccs(self.dumps) 
-            if len(s) > 1
-            )
+            tuple(sorted(s))
+            for s in SCC(str,lambda v: successors(self.dumps,v)).getsccs(self.dumps)
+            if len(s) > 1)
         
         if len(self.clusters) > 0:
             warn( 
@@ -346,6 +336,9 @@ class GenerateBoost(object):
 
         self.dumps = read_dumps(self.dump_dir)
 
+        self.transitive_dependencies = to_mutable_graph(self.dumps)
+        inplace_transitive_closure(self.transitive_dependencies)
+        
         # Make sure there are no modularity violations
         self._find_dependency_cycles()
         
