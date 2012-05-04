@@ -67,7 +67,12 @@ def run(dump_dir=None):
             else:
                 return ['style=dotted','color=gray']
 
-    show_digraph(full_graph, formatter=Format(), ranksep=1.8, splines='true', layout='dot')
+    if '--all' in sys.argv[1:]:
+        full_graph = dict((v, direct_graph[v] | t_redux[v]) for v in g)
+        show_digraph(full_graph, formatter=Format(), layout='neato', overlap='scalexy', ordering='out', splines='true')
+    else:
+        full_graph = to_mutable_graph(g, vertex_filter=V.__contains__)
+        show_digraph(full_graph, formatter=Format(), ranksep=1.8, splines='true', layout='dot')
 
 if __name__ == '__main__':
     argv = set(sys.argv[1:])
