@@ -88,15 +88,21 @@ class GenerateBoost(object):
         def __getattr__(self, name):
             return getattr(self.ctx,name)
 
+        @property
+        def has_binaries(self):
+            return len(self.binary_libs + self.executables)
+
         def __init__(self, ctx, cmake_name):
             self.ctx = ctx
             self.cmake_name = cmake_name
             self.in_cluster = self.cluster_map.get(cmake_name)
-            self.srcdir = self.dumps[cmake_name].findtext('source-directory')
+            dump = self.dumps[cmake_name]
+            self.srcdir = dump.findtext('source-directory')
             self.git_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=self.srcdir).strip()
             self.repo = str(self.srcdir - self.source_root)
             self.boost_metadata = boost_metadata.lib_metadata(self.repo, self.boost_metadata)
-            self.has_binaries = cmake_name in self.binary_libs
+            self.binary_libs = [x.text for x in dump.findall('libraries/library')]
+            self.executables = [x.text for x in dump.findall('executables/executable')]
             self.brand_name = get_brand_name(cmake_name)
             self.build_dependencies = self.transitive_dependencies[cmake_name]
 
@@ -107,7 +113,8 @@ class GenerateBoost(object):
             if self.has_binaries and not self.in_cluster:
                 self.tasks.add_task(self._write_preinstall_feed)
 
-            self.tasks.add_task(self._write_dev_feed)
+            if self.dumps[cmake_name].find('include-directories/directory') is not None:
+                self.tasks.add_task(self._write_dev_feed)
         
         def _feed_name(self, component):
             return self.repo + ('' if component == 'bin' else '-'+component) + '.xml'
@@ -175,7 +182,7 @@ class GenerateBoost(object):
                 _0cmake_args = ['dev', self.cmake_name]
             else:
                 source_feed = self._feed_uri('preinstall' if self.has_binaries else 'src')
-                _0cmake_args = ['dev' if self.has_binaries else 'headers']
+                _0cmake_args = ['dev' if len(self.binary_libs) else 'headers']
             self._write_feed(
                 'dev'
               , self._implementation('*-src') [
@@ -191,11 +198,11 @@ class GenerateBoost(object):
                     # If there are no binaries we need a
                     # CMakeLists.txt overlay and the feed we generate
                     # is architecture-independent
-                  , [
+                  , [] if self.has_binaries
+                    else [
                         self._cmakelists_overlay(self.repo)
                       , xmlns.compile.implementation(arch='*-*') 
                     ]
-                    if not self.has_binaries else []
               ]
           )
 
@@ -283,15 +290,6 @@ class GenerateBoost(object):
             if Path(old_feed).name != 'CMakeLists.xml':
                 os.unlink(old_feed)
 
-    def _identify_binary_libs(self):
-        print '### identifying binary libraries:'
-        self.binary_libs = set(
-            name for name, dump in self.dumps.items() 
-            if dump.find('libraries/library') is not None)
-
-        import pprint
-        pprint.pprint(self.binary_libs)
-
     # I think this will end up being unused
     def _cluster_name(self, cluster):
         splits = [ split_package_prefix(x) for x in cluster ]
@@ -344,8 +342,6 @@ class GenerateBoost(object):
         # Make sure there are no modularity violations
         self._find_dependency_cycles()
         
-        self._identify_binary_libs()
-
         self.version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
         print '### new version =', self.version
 
