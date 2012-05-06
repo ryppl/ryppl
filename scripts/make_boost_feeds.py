@@ -110,6 +110,7 @@ class GenerateBoost(object):
 
             self.brand_name = get_brand_name(cmake_name)
             self.build_dependencies = self.transitive_dependencies[cmake_name]
+            assert cmake_name not in self.build_dependencies, "Self-loop detected: "+cmake_name
 
             print '##', self.brand_name
 
@@ -397,6 +398,10 @@ class GenerateBoost(object):
 
         self.transitive_dependencies = to_mutable_graph(self.dumps)
         inplace_transitive_closure(self.transitive_dependencies)
+        
+        # eliminate self-loops
+        for v0,v1s in self.transitive_dependencies.items():
+            v1s.discard(v0)
         
         # Make sure there are no modularity violations
         self._find_dependency_cycles()
