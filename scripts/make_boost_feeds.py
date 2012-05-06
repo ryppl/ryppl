@@ -352,7 +352,8 @@ class GenerateBoost(object):
 
         self._delete_old_feeds()
             
-        if True:
+        use_threads = True
+        if use_threads: 
             self.tasks = threadpool.ThreadPool(8)
         else:
             class Tasks(object): 
