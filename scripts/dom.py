@@ -79,7 +79,9 @@ class tag(object):
 
     @staticmethod
     def _flatten_append(l, x):
-        if isinstance(x, tag):
+        if x is None:
+            pass
+        elif isinstance(x, tag):
             l.append(x.element)
         elif isinstance(x, _Element):
             l.append(x)
@@ -157,7 +159,11 @@ if __name__ == '__main__':
 
     print xml_document(dashtag.checkout_shopping_cart(xmlns="http://checkout.google.com/schema/2"))
     
-    print _.text[ 'here is some ', 'text ', _.b['boldly ', 32], ' under rocks' ]
+    t = _.text[ 'here is some ', 'text ', _.b['boldly ', 32], ' under rocks' ]
+    print t
+    assert str(t) == str(
+        _.text[ None, 'here is some ', None, 'text ', _.b['boldly ', 32], ' under rocks', None ])
+
     r = _.text[ 'here is some ', 'text ', _.b['boldly ', 32], ' under rocks' ]
     r <<= _.i['fu']
     print r
