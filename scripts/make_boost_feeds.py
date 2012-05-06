@@ -88,9 +88,7 @@ class GenerateBoost(object):
         def __getattr__(self, name):
             return getattr(self.ctx,name)
 
-        @property
-        def has_binaries(self):
-            return len(self.binary_libs + self.executables)
+        preinstall_feed = None
 
         def __init__(self, ctx, cmake_name):
             self.ctx = ctx
@@ -101,20 +99,118 @@ class GenerateBoost(object):
             self.git_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=self.srcdir).strip()
             self.repo = str(self.srcdir - self.source_root)
             self.boost_metadata = boost_metadata.lib_metadata(self.repo, self.boost_metadata)
-            self.binary_libs = [x.text for x in dump.findall('libraries/library')]
-            self.executables = [x.text for x in dump.findall('executables/executable')]
+            
+            def dump_list(xpath):
+                ret = [x.text for x in dump.findall(xpath)]
+                return ret if len(ret)>0 else None
+
+            self.binary_libs = dump_list('libraries/library')
+            self.executables = dump_list('executables/executable')
+            self.include_directories = dump_list('include-directories/directory')
+
             self.brand_name = get_brand_name(cmake_name)
             self.build_dependencies = self.transitive_dependencies[cmake_name]
 
             print '##', self.brand_name
 
-            self.tasks.add_task(self._write_src_feed)
+            if self.in_cluster:
+                self.tasks.add_task(self._write_src_feed)
+                self.preinstall_feed = self._cluster_feed_name(self.in_cluster)
+                self.preinstall_subdirectory = self.repo + '/'
 
-            if self.has_binaries and not self.in_cluster:
-                self.tasks.add_task(self._write_preinstall_feed)
+            # if there is more than one build product, we need a
+            # preinstall feed.  Cluster preinstall feeds are handled
+            # separately.
+            elif bool(self.binary_libs) \
+                    + bool(self.executables) \
+                    + bool(self.include_directories) > 1:
+                self.preinstall_feed = self.repo + '-preinstall'
+                self.preinstall_subdirectory = ''
+                self.install('preinstall')
 
-            if self.dumps[cmake_name].find('include-directories/directory') is not None:
-                self.tasks.add_task(self._write_dev_feed)
+            # Presumably, you only need a -dev feed if the thing has
+            # headers.  It's conceivable that you need a -dev feed for
+            # a Windows library with no headers (if such a thing can
+            # exist), because of the import library.  Fortunately,
+            # we've never seen that beast.
+            if self.preinstall_feed:
+                if self.include_directories:
+                    self.copy_from_preinstall('dev')
+                if self.binary_libs or self.executables:
+                    self.copy_from_preinstall('bin')
+            else:
+                # No preinstall => header-only or executable-only, but not both
+                assert bool(self.include_directories) != (self.executables or self.binary_libs), repr((self.include_directories,self.executables))
+                if self.include_directories:
+                    self.install('dev')
+                else:
+                    self.install('bin')
+
+            # It's a little unclear whether something like wave should
+            # be packaged as an executable and a separate library, or
+            # not.  For now, just glom them together.
+            if self.binary_libs or self.executables:
+                self.install('bin')
+
+        def copy_from_preinstall(self, component):
+            self.tasks.add_task(
+                self._write_feed, component
+                , self._implementation('*-src') [ self._empty_zipball ]
+                , _.command(name='compile') [
+                    _.runner(interface=feed_uri_base+'cmake.xml') [
+                        [_.arg[ x ] for x in '-E copy_directory ${SRCDIR} ${DISTDIR}'.split()]
+                        ]
+                    , _.requires(interface=boost_feed_uri(self.preinstall_feed)) [
+                        _.environment(
+                            insert=self.preinstall_subdirectory + component, 
+                            mode='replace', name='SRCDIR')
+                        ]
+                    , self.implementation_template(component)
+                    ]
+                )
+        
+        def implementation_template(self, component):
+            if component == 'dev' and not self.binary_libs:
+                # Header-only -dev feeds can be marked architecture-independent
+                # TODO: can we make -dev a *-* feed on Posix always, since there's no implib?
+                return xmlns.compile.implementation(arch='*-*')
+            elif component == 'bin' and self.executables:
+                 # -bin feeds with executables should include their run commands
+                return xmlns.compile.implementation() [
+                          [ _.command(name='run', path=x) for x in self.executables[:1] ]
+                        , [ _.command(name=x, path=x) for x in self.executables[1:]]
+                          ]
+            else:
+                return None
+            
+        def install(self, component):
+            self.tasks.add_task(
+                self._write_feed, component
+                ,  self._git_snapshot('*-src') 
+                     if component == 'preinstall' or not self.preinstall_feed 
+                   else self._implementation('*-src')[ self._empty_zipball ]
+                , _.command(name='compile') [
+                    _.runner(interface=ryppl_feed_uri('0cmake')) [
+                        _.arg[ '--overlay=${BOOST_CMAKELISTS}' ] 
+                        , _.arg[ '--build-type=Debug' ] if component == 'dbg' else []
+                        , _.arg[ component ]
+                        ]
+
+                    , _.requires(interface=boost_feed_uri(self.preinstall_feed)) [
+                        _.environment(
+                            insert=self.preinstall_subdirectory + component, 
+                            mode='replace', name='SRCDIR')
+                        ]
+                    if self.preinstall_feed else None
+
+                    , _.requires(interface=boost_feed_uri('CMakeLists'))[
+                        _.environment(insert=self.repo, mode='replace', name='BOOST_CMAKELISTS')
+                        ]
+                    , self._dev_requirements(self.build_dependencies)
+                    , self.implementation_template(component)
+                    ]
+                )
+
         
         def _feed_name(self, component):
             return self.repo + ('' if component == 'bin' else '-'+component) + '.xml'
@@ -128,7 +224,10 @@ class GenerateBoost(object):
             interface.indent()
             feed_path = self.feed_dir/self._feed_name(component)
             xml_document(interface).write(feed_path, encoding='utf-8', xml_declaration=True)
+            sys.stdout.flush()
+
             sign_feed(feed_path)
+            
 
         def _feed_uri(self, component):
             return boost_feed_uri_base+self._feed_name(component)
@@ -176,57 +275,6 @@ class GenerateBoost(object):
                , self._git_snapshot('*-*')
                 )
 
-        def _write_dev_feed(self):
-            if self.in_cluster:
-                source_feed = boost_feed_uri(self._cluster_feed_name(self.in_cluster))
-                _0cmake_args = ['dev', self.cmake_name]
-            else:
-                source_feed = self._feed_uri('preinstall' if self.has_binaries else 'src')
-                _0cmake_args = ['dev' if len(self.binary_libs) else 'headers']
-            self._write_feed(
-                'dev'
-              , self._implementation('*-src') [
-                    self._empty_zipball
-                    ]
-              , _.command(name='compile') [
-                    self._0cmake_runner( *_0cmake_args )
-                  , _.requires(
-                        interface=source_feed
-                    ) [
-                        _.environment(insert='.', mode='replace', name='SRCDIR')
-                    ]
-                    # If there are no binaries we need a
-                    # CMakeLists.txt overlay and the feed we generate
-                    # is architecture-independent
-                  , [] if self.has_binaries
-                    else [
-                        self._cmakelists_overlay(self.repo)
-                      , xmlns.compile.implementation(arch='*-*') 
-                    ]
-              ]
-          )
-
-        def _write_preinstall_feed(self):
-            self._write_feed(
-                'preinstall'
-              , self._implementation('*-src') [
-                    self._empty_zipball
-                    ]
-              , _.command(name='compile') [
-                    self._0cmake_runner( 'preinstall' )
-                  , _.requires(interface=self._feed_uri('src')) [
-                        _.environment(insert='.', mode='replace', name='SRCDIR')
-                    ]
-                  , self._cmakelists_overlay(self.repo)
-                  , self._build_requirements()
-              ]
-          )
-
-        def _build_requirements(self):
-            """Return a set of (feedURI, CMakeVariable) pairs that can
-            be used to generate build requirements"""
-            return self._dev_requirements(self.build_dependencies)
-
     def _build_dependencies(self, cmake_package_name):
         return self.transitive_dependencies[cmake_package_name]
 
@@ -237,34 +285,56 @@ class GenerateBoost(object):
 
     def _write_cluster_feed(self, cluster):
         feed_name = self._cluster_feed_name(cluster)
+        
+        subdirs = dict((self._src_dir_name(x),x) for x in cluster)
+        
         interface = _.interface(
             uri=boost_feed_uri(feed_name)
-          , xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
-          , **{
+            , xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
+            , **{
                 'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
-              , 'xmlns:dc':'http://purl.org/dc/elements/1.1/'
+                , 'xmlns:dc':'http://purl.org/dc/elements/1.1/'
                 })[
             _.name['%s (built state)' % ', '.join(cluster),]
-          , _.summary['evil build dependency cluster']
-          , boost_icon
-          , _.group(license=BSL_1_0)
+            , _.summary['Evil Build Dependency Cluster (EBDC)']
+            , boost_icon
+            , _.group(license=BSL_1_0)
             [
                 self._implementation('*-src')[self._empty_zipball]
-              , _.command(name='compile') [
-                    self._0cmake_runner('cluster', *(p+'='+self._src_dir_name(p) for p in cluster))
-                  , [
-                        _.requires(interface=self.cmake_package_to_feed_uri(cmake_name, 'src'))
-                        [
-                            _.environment(insert='.', mode='replace', name=cmake_name+'_SRCDIR')
+                , _.command(name='compile') [
+
+                    _.runner(interface=ryppl_feed_uri('0cmake')) 
+                    [
+                        _.arg[ '--overlay=${BOOST_CMAKELISTS}' ] 
+
+                        # , _.arg[ '--build-type=Debug' ] if component == 'dbg' else []
+                        
+                        , [ _.arg[x] 
+                            for d,c in subdirs.items()
+                            for x in ['--add-subdirectory', '${%s_SRCDIR}' % c, d ]
+                            ]
+
+                        # Component selection may be too naive here in
+                        # general, but hopefully this whole block will
+                        # be obsolete as we eliminate clusters
+                        , [ _.arg[ d+'/'+component ] for component in 'dev','bin' for d in subdirs ]
                         ]
-                        for cmake_name in cluster
+
+                    , [
+                        _.requires(interface=boost_feed_uri(d+'-src')) [
+                            _.environment(insert='.', mode='replace', name=c+'_SRCDIR')
+                            ]
+                        for d,c in subdirs.items()]
+
+                    , _.requires(interface=boost_feed_uri('CMakeLists'))[
+                        _.environment(insert='.', mode='replace', name='BOOST_CMAKELISTS')
+                        ]
+
+                    , self._dev_requirements(
+                            dep for x in cluster for dep in self._build_dependencies(x)
+                            if dep not in cluster
+                            )
                     ]
-                  , self._dev_requirements(
-                        dep for x in cluster for dep in self._build_dependencies(x)
-                        if dep not in cluster
-                        )
-                    ]
-                  , self._cmakelists_overlay()
                 ]
             ]
 
@@ -272,17 +342,6 @@ class GenerateBoost(object):
         feed_path = self.feed_dir/feed_name+'.xml'
         xml_document(interface).write(feed_path, encoding='utf-8', xml_declaration=True)
         sign_feed(feed_path)
-
-    def _cmakelists_overlay(self, subdir='.'):
-        return _.requires(interface='http://ryppl.github.com/feeds/boost/CMakeLists.xml')[
-            _.environment(insert=subdir, mode='replace', name='BOOST_CMAKELISTS_OVERLAY')
-        ]
-
-    def _0cmake_runner(self, *args):
-        return _.runner(interface=ryppl_feed_uri('0cmake')) [
-            _.version(**{'not-before':'0.8-pre-201205011504'})
-            , [ _.arg[ x ] for x in args ]
-        ]
 
     def _delete_old_feeds(self):
         print '### deleting old feeds...'
