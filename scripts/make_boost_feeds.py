@@ -202,7 +202,7 @@ class GenerateBoost(object):
                             insert=self.preinstall_subdirectory + component, 
                             mode='replace', name='SRCDIR')
                         ]
-                    if self.preinstall_feed else None
+                    if self.preinstall_feed and component != 'preinstall' else None
 
                     , _.requires(interface=boost_feed_uri('CMakeLists'))[
                         _.environment(insert=self.repo, mode='replace', name='BOOST_CMAKELISTS')
