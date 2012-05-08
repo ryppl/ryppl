@@ -108,6 +108,12 @@ class GenerateBoost(object):
             self.executables = dump_list('executables/executable')
             self.include_directories = dump_list('include-directories/directory')
 
+            self.components = set()
+            if self.binary_libs or self.executables:
+                self.components.add('bin')
+            if self.include_directories:
+                self.components.add('dev')
+
             self.brand_name = get_brand_name(cmake_name)
             self.build_dependencies = self.transitive_dependencies[cmake_name]
             assert cmake_name not in self.build_dependencies, "Self-loop detected: "+cmake_name
@@ -122,36 +128,20 @@ class GenerateBoost(object):
             # if there is more than one build product, we need a
             # preinstall feed.  Cluster preinstall feeds are handled
             # separately.
-            elif bool(self.binary_libs) \
-                    + bool(self.executables) \
-                    + bool(self.include_directories) > 1:
+            elif len(self.components) > 1:
                 self.preinstall_feed = self.repo + '-preinstall'
                 self.preinstall_subdirectory = ''
-                self.install('preinstall')
+                self.build('preinstall')
 
-            # Presumably, you only need a -dev feed if the thing has
-            # headers.  It's conceivable that you need a -dev feed for
-            # a Windows library with no headers (if such a thing can
-            # exist), because of the import library.  Fortunately,
-            # we've never seen that beast.
             if self.preinstall_feed:
-                if self.include_directories:
-                    self.copy_from_preinstall('dev')
-                if self.binary_libs or self.executables:
-                    self.copy_from_preinstall('bin')
+                for c in self.components:
+                    self.copy_from_preinstall(c)
             else:
                 # No preinstall => header-only or executable-only, but not both
-                assert bool(self.include_directories) != (self.executables or self.binary_libs), repr((self.include_directories,self.executables))
-                if self.include_directories:
-                    self.install('dev')
-                else:
-                    self.install('bin')
-
-            # It's a little unclear whether something like wave should
-            # be packaged as an executable and a separate library, or
-            # not.  For now, just glom them together.
-            if self.binary_libs or self.executables:
-                self.install('bin')
+                sys.stdout.flush()
+                assert len(self.components) <= 1
+                for x in self.components:
+                    self.build(iter(self.components).next())
 
         def copy_from_preinstall(self, component):
             self.tasks.add_task(
@@ -184,7 +174,7 @@ class GenerateBoost(object):
             else:
                 return None
             
-        def install(self, component):
+        def build(self, component):
             self.tasks.add_task(
                 self._write_feed, component
                 ,  self._git_snapshot('*-src') 
@@ -193,16 +183,9 @@ class GenerateBoost(object):
                 , _.command(name='compile') [
                     _.runner(interface=ryppl_feed_uri('0cmake')) [
                         _.arg[ '--overlay=${BOOST_CMAKELISTS}' ] 
-                        , _.arg[ '--build-type=Debug' ] if component == 'dbg' else []
-                        , _.arg[ component ]
+                        , _.arg[ '--build-type=Debug' ] if component == 'dbg' else None
+                        , [_.arg[ c ] for c in self.components]
                         ]
-
-                    , _.requires(interface=boost_feed_uri(self.preinstall_feed)) [
-                        _.environment(
-                            insert=self.preinstall_subdirectory + component, 
-                            mode='replace', name='SRCDIR')
-                        ]
-                    if self.preinstall_feed and component != 'preinstall' else None
 
                     , _.requires(interface=boost_feed_uri('CMakeLists'))[
                         _.environment(insert=self.repo, mode='replace', name='BOOST_CMAKELISTS')
