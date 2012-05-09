@@ -168,9 +168,10 @@ function(ryppl_export)
   set(BUILD_INIT "")
   set(INSTALL_INIT "
 get_filename_component(${PROJECT_NAME}_DEV_DIR \"\${CMAKE_CURRENT_LIST_DIR}/\" ABSOLUTE)
-if(\"\$ENV{${PROJECT_NAME}_BIN_DIR}\")
+if(NOT ${PROJECT_NAME}_BIN_DIR)
   set(${PROJECT_NAME}_BIN_DIR \"\$ENV{${PROJECT_NAME}_BIN_DIR}\")
-else()
+endif()
+if(NOT ${PROJECT_NAME}_BIN_DIR)
   set(${PROJECT_NAME}_BIN_DIR \"\${${PROJECT_NAME}_DEV_DIR}\")
 endif()"
     )
