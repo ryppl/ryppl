@@ -2,8 +2,8 @@
 # Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 import sys
-from ryppl.support._argparse import existing_directory
-from ryppl.support._zeroinstall import launch
+from ryppl.support import _argparse
+from ryppl.support import _zeroinstall
 from os import environ as env
 import os
 from multiprocessing import cpu_count
@@ -13,7 +13,7 @@ def command_line_interface(cli):
 
     cli.add_argument(
         '--overlay'
-      , type=existing_directory
+      , type=_argparse.existing_directory
       , help='A directory to be overlaid on the composite source directory before building')
 
     cli.add_argument(
