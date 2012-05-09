@@ -156,8 +156,8 @@ class GenerateBoost(object):
                 self._write_feed, component
                 , self._implementation('*-src') [ self._empty_zipball ]
                 , _.command(name='compile') [
-                    _.runner(interface=feed_uri_base+'cmake.xml') [
-                        [_.arg[ x ] for x in '-E copy_directory ${SRCDIR} ${DISTDIR}'.split()]
+                    _.runner(interface=ryppl_feed_uri('ryppl')) [
+                            _.arg['writable-directory-overlay'], _.arg['${SRCDIR}'], _.arg['${DISTDIR}']
                         ]
                     , _.requires(interface=boost_feed_uri(self.preinstall_feed)) [
                         _.environment(
@@ -189,8 +189,9 @@ class GenerateBoost(object):
                      if component == 'preinstall' or not self.preinstall_feed 
                    else self._implementation('*-src')[ self._empty_zipball ]
                 , _.command(name='compile') [
-                    _.runner(interface=ryppl_feed_uri('0cmake')) [
-                        _.arg[ '--overlay=${BOOST_CMAKELISTS}' ] 
+                    _.runner(interface=ryppl_feed_uri('ryppl')) [
+                        _.arg[ '0install-cmake' ] 
+                      , _.arg[ '--overlay=${BOOST_CMAKELISTS}' ] 
                         , _.arg[ '--build-type=Debug' ] if component == 'dbg' else None
                         , [_.arg[ c ] for c in self.components]
                         ]
@@ -295,9 +296,10 @@ class GenerateBoost(object):
                 self._implementation('*-src')[self._empty_zipball]
                 , _.command(name='compile') [
 
-                    _.runner(interface=ryppl_feed_uri('0cmake')) 
+                    _.runner(interface=ryppl_feed_uri('ryppl')) 
                     [
-                        _.arg[ '--overlay=${BOOST_CMAKELISTS}' ] 
+                        _.arg[ '0install-cmake' ]
+                      , _.arg[ '--overlay=${BOOST_CMAKELISTS}' ] 
 
                         # , _.arg[ '--build-type=Debug' ] if component == 'dbg' else []
                         
