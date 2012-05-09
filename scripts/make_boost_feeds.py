@@ -176,8 +176,8 @@ class GenerateBoost(object):
             elif component == 'bin' and self.executables:
                  # -bin feeds with executables should include their run commands
                 return xmlns.compile.implementation() [
-                          [ _.command(name='run', path=x) for x in self.executables[:1] ]
-                        , [ _.command(name=x, path=x) for x in self.executables[1:]]
+                          [ _.command(name='run', path='bin/'+x) for x in self.executables[:1] ]
+                        , [ _.command(name=x, path='bin/'+x) for x in self.executables[1:]]
                           ]
             else:
                 return None
