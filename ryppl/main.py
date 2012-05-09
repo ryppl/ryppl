@@ -17,8 +17,7 @@ def run(argv):
 
         cmd_name = module_name.replace('_', '-')[int(module_name.startswith('_')):]
 
-        kw = dict(description=getattr(cmd_module, '__doc__'))
-        print kw
+        kw = dict(description=getattr(cmd_module.command_line_interface, '__doc__', None))
 
         subparser = subparsers.add_parser(cmd_name, **kw)
         subparser.set_defaults(runner=cmd_module.run)
