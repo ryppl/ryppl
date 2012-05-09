@@ -66,12 +66,20 @@ class GenerateBoost(object):
                 , ('' if component == 'bin' else '-'+component)
               )
 
+    def has_binary_lib(self, cmake_package_name):
+        return self.dumps[cmake_package_name].find('libraries/library') is not None
+
     def _dev_requirements(self, cmake_package_names):
         return [
             _.requires(interface=self.cmake_package_to_feed_uri(cmake_package, 'dev')) [
                 _.environment(insert='.', mode='replace', name=cmake_package+'_DIR')
                 ]
             for cmake_package in set(cmake_package_names)
+            ] +  [
+            _.requires(interface=self.cmake_package_to_feed_uri(cmake_package, 'bin')) [
+                _.environment(insert='.', mode='replace', name=cmake_package+'_BIN_DIR')
+                ]
+            for cmake_package in set(cmake_package_names) if self.has_binary_lib(cmake_package)
             ]
 
     _empty_zipball = (
