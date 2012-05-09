@@ -2,7 +2,7 @@
 # Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-from ryppl.extensions.argparse import existing_directory
+from ryppl.support._argparse import existing_directory
 import os
 import shutil
 import stat
