@@ -1,0 +1,36 @@
+<?xml version='1.0' ?>
+<!-- Copyright Dave Abrahams 2012. Distributed under the Boost -->
+<!-- Software License, Version 1.0. (See accompanying -->
+<!-- file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt) -->
+<?xml-stylesheet type='text/xsl' href='interface.xsl'?>
+<interface uri='http://ryppl.github.com/feeds/ryppl/ryppl.xml' 
+           xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
+           xmlns:dc='http://purl.org/dc/elements/1.1/'>
+  <name>ryppl</name>
+  <summary>A Software Ecosystem Driver</summary>
+  <description>
+This project implements the ryppl command.  Initially this command
+is used in 0install build-from-source instructions (see the 0compile
+documentation) to implement composite build instructions, since
+0install feeds only support running a single command.  However, we
+intend to extend it to support multiple user-level commands.
+  </description>
+  <category>Development</category>
+  <category>Building</category>
+  <homepage>http://ryppl.org</homepage>
+  <dc:author>Dave Abrahams &lt;dave@boostpro.com&gt;</dc:author>
+  <feed-for interface='http://ryppl.github.com/feeds/ryppl/ryppl.xml'/>
+
+  <group license="OSI Approved :: Boost Software License 1.0 (BSL-1.0)">
+    <implementation id='.' version='0.8-post' stability="testing"/>
+    <command name='run' path='bin/ryppl'>
+      <runner interface='http://repo.roscidus.com/python/python'>
+        <version before='3'/>
+      </runner>
+      <requires interface='http://ryppl.github.com/feeds/ryppl/CMakeSupport.xml'>
+        <version not-before='0.8-pre-201205050948' />
+        <environment insert="Modules" mode="replace" name="RYPPL_CMAKE_MODULE_PATH"/>
+      </requires>
+    </command>
+  </group>
+</interface>
