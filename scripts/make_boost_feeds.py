@@ -77,7 +77,19 @@ class GenerateBoost(object):
             for cmake_package in set(cmake_package_names)
             ] +  [
             _.requires(interface=self.cmake_package_to_feed_uri(cmake_package, 'bin')) [
+                # This one is needed for the library build
                 _.environment(insert='.', mode='replace', name=cmake_package+'_BIN_DIR')
+                ]
+            for cmake_package in set(cmake_package_names) if self.has_binary_lib(cmake_package)
+            ]
+
+    def _run_requirements(self, cmake_package_names):
+        return [
+            _.requires(interface=self.cmake_package_to_feed_uri(cmake_package, 'bin')) [
+                # These are needed for runtime (they come through compile:include-binary)
+                _.environment(insert='bin', name='PATH')
+              , _.environment(insert='lib', name='LD_LIBRARY_PATH')
+              , _.environment(insert='lib', name='DYLD_LIBRARY_PATH')
                 ]
             for cmake_package in set(cmake_package_names) if self.has_binary_lib(cmake_package)
             ]
@@ -178,6 +190,7 @@ class GenerateBoost(object):
                 return xmlns.compile.implementation() [
                           [ _.command(name='run', path='bin/'+x) for x in self.executables[:1] ]
                         , [ _.command(name=x, path='bin/'+x) for x in self.executables[1:]]
+                          , self._run_requirements(self.build_dependencies)
                           ]
             else:
                 return None
