@@ -102,7 +102,7 @@ function(ryppl_export)
 
   if(EXPORT_INCLUDE_DIRECTORIES)
     set(_include_dirs "${_include_dirs}@PACKAGE_INCLUDE_DIRS@")
-    set(INSTALL_INCLUDE_DIRS "\n  \"\${DEV_PREFIX_DIR}/include/\"")
+    set(INSTALL_INCLUDE_DIRS "\n  \"\${${PROJECT_NAME}_DEV_DIR}/include/\"")
     set(BUILD_INCLUDE_DIRS "")
 
     foreach(path ${EXPORT_INCLUDE_DIRECTORIES})
@@ -167,11 +167,9 @@ function(ryppl_export)
 
   set(BUILD_INIT "")
   set(INSTALL_INIT "
-get_filename_component(DEV_PREFIX_DIR \"\${CMAKE_CURRENT_LIST_DIR}/\" ABSOLUTE)
-if(DEFINED ${PROJECT_NAME}_BIN_DIR)
-  set(BIN_PREFIX_DIR \"\${${PROJECT_NAME}_BIN_DIR}\")
-else()
-  set(BIN_PREFIX_DIR \"\${DEV_PREFIX_DIR}\")
+get_filename_component(${PROJECT_NAME}_DEV_DIR \"\${CMAKE_CURRENT_LIST_DIR}/\" ABSOLUTE)
+if(NOT ${PROJECT_NAME}_BIN_DIR)
+  set(${PROJECT_NAME}_BIN_DIR \"\${${PROJECT_NAME}_DEV_DIR}\")
 endif()"
     )
 
@@ -192,9 +190,9 @@ endif()"
       file(APPEND "${_config_in}"
         "add_library(${target} SHARED IMPORTED)\n"
         "set_target_properties(${target} PROPERTIES\n"
-        "  IMPORTED_LOCATION \"\${BIN_PREFIX_DIR}/lib/${output}\"\n"
-#       "  IMPORTED_IMPLIB \"\${DEV_PREFIX_DIR}/${implib}\"\n"  # TODO: for windows
-#       "  IMPORTED_SONAME \"\${BIN_PREFIX_DIR}/${soname}\"\n"  # TODO: once we use soname
+        "  IMPORTED_LOCATION \"\${${PROJECT_NAME}_BIN_DIR}/lib/${output}\"\n"
+#       "  IMPORTED_IMPLIB \"\${${PROJECT_NAME}_DEV_DIR}/${implib}\"\n"  # TODO: for windows
+#       "  IMPORTED_SONAME \"\${${PROJECT_NAME}_BIN_DIR}/${soname}\"\n"  # TODO: once we use soname
         "  )\n"
         )
       list(APPEND libraries ${target})
@@ -203,7 +201,7 @@ endif()"
       file(APPEND "${_config_in}"
         "add_library(${target} STATIC IMPORTED)\n"
         "set_target_properties(${target} PROPERTIES\n"
-        "  IMPORTED_LOCATION \"\${DEV_PREFIX_DIR}/lib/${output}\"\n"
+        "  IMPORTED_LOCATION \"\${${PROJECT_NAME}_DEV_DIR}/lib/${output}\"\n"
         "  )\n"
         )
       list(APPEND libraries ${target})
@@ -212,7 +210,7 @@ endif()"
       file(APPEND "${_config_in}"
         "add_executable(${target} IMPORTED)\n"
         "set_target_properties(${target} PROPERTIES\n"
-        "  IMPORTED_LOCATION \"\${BIN_PREFIX_DIR}/bin/${output}\"\n"
+        "  IMPORTED_LOCATION \"\${${PROJECT_NAME}_BIN_DIR}/bin/${output}\"\n"
         "  )\n"
         )
       list(APPEND executables ${target})
