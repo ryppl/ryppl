@@ -82,7 +82,6 @@ function(ryppl_export)
   set(_find_package )
   set(_definitions ${EXPORT_DEFINITIONS})
   set(_include_dirs )
-  set(_libraries )    # contains shared libraries only
 
   # Should we really do this?  It means there's no way to inject
   # directories into clients' #include paths that aren't also in the
@@ -99,7 +98,6 @@ function(ryppl_export)
     set(_find_package "${_find_package}@PACKAGE_FIND_PACKAGE@(${depends})\n")
     set(_definitions "${_definitions}\${${name}_DEFINITIONS}\n  ")
     set(_include_dirs "${_include_dirs}\n  \${${name}_INCLUDE_DIRS}")
-    set(_libraries "${_libraries}\${${name}_LIBRARIES}\n  ")
   endforeach(depends)
 
   if(EXPORT_INCLUDE_DIRECTORIES)
@@ -119,22 +117,6 @@ function(ryppl_export)
       set(BUILD_INCLUDE_DIRS "${BUILD_INCLUDE_DIRS}\n  \"${path}/\"")
     endforeach(path)
   endif(EXPORT_INCLUDE_DIRECTORIES)
-
-  set(libraries)
-  set(executables)
-  foreach(target ${EXPORT_TARGETS})
-    get_target_property(type ${target} TYPE)
-    if(type STREQUAL "SHARED_LIBRARY" OR type STREQUAL "STATIC_LIBRARY")
-      # Separately accumulate shared libraries, since they are not
-      # compiled into the targets exported here.
-      if(type STREQUAL "SHARED_LIBRARY")
-        set(_libraries "${_libraries}${target}\n ")
-      endif(type STREQUAL "SHARED_LIBRARY")
-      list(APPEND libraries ${target})
-    elseif(type STREQUAL "EXECUTABLE")
-      list(APPEND executables ${target})
-    endif()
-  endforeach(target)
 
   set(_config_base    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config")
   set(_config_in      "${_config_base}.cmake.in")
@@ -179,21 +161,19 @@ function(ryppl_export)
       )
   endif(_include_dirs)
 
-  if(_libraries)
-    file(APPEND "${_config_in}"
-      "set(${PROJECT_NAME}_LIBRARIES\n  ${_libraries})\n"
-      "if(${PROJECT_NAME}_LIBRARIES)\n"
-      "  list(REMOVE_DUPLICATES ${PROJECT_NAME}_LIBRARIES)\n"
-      "endif()\n\n"
-      )
-  endif(_libraries)
-
   foreach(code ${EXPORT_CODE})
     file(APPEND "${_config_in}" "${code}")
   endforeach(code)
 
   set(BUILD_INIT "")
-  set(INSTALL_INIT "\nget_filename_component(PACKAGE_PREFIX_DIR \"\${CMAKE_CURRENT_LIST_DIR}/\" ABSOLUTE)")
+  set(INSTALL_INIT "
+get_filename_component(DEV_PREFIX_DIR \"\${CMAKE_CURRENT_LIST_DIR}/\" ABSOLUTE)
+if(DEFINED ${PROJECT_NAME}_BIN_DIR)
+  set(BIN_PREFIX_DIR \"\${${PROJECT_NAME}_BIN_DIR}\")
+else()
+  set(BIN_PREFIX_DIR \"\${DEV_PREFIX_DIR}\")
+endif()"
+    )
 
   set(BUILD_FIND_PACKAGE "ryppl_find_package")
   set(INSTALL_FIND_PACKAGE "find_package")
@@ -202,6 +182,42 @@ function(ryppl_export)
   ryppl_configure_package_config_file("${_config_in}" "${_config_build}"
     BUILD
     )
+
+  set(libraries)
+  set(executables)
+  foreach(target ${EXPORT_TARGETS})
+    get_target_property(type ${target} TYPE)
+    if("${type}" STREQUAL "SHARED_LIBRARY")
+      set(output "${CMAKE_SHARED_LIBRARY_PREFIX}${target}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+      file(APPEND "${_config_in}"
+        "add_library(${target} SHARED IMPORTED)\n"
+        "set_target_properties(${target} PROPERTIES\n"
+        "  IMPORTED_LOCATION \"\${BIN_PREFIX_DIR}/lib/${output}\"\n"
+#       "  IMPORTED_IMPLIB \"\${DEV_PREFIX_DIR}/${implib}\"\n"  # TODO: for windows
+#       "  IMPORTED_SONAME \"\${BIN_PREFIX_DIR}/${soname}\"\n"  # TODO: once we use soname
+        "  )\n"
+        )
+      list(APPEND libraries ${target})
+    elseif("${type}" STREQUAL "STATIC_LIBRARY")
+      set(output "${CMAKE_STATIC_LIBRARY_PREFIX}${target}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+      file(APPEND "${_config_in}"
+        "add_library(${target} STATIC IMPORTED)\n"
+        "set_target_properties(${target} PROPERTIES\n"
+        "  IMPORTED_LOCATION \"\${DEV_PREFIX_DIR}/lib/${output}\"\n"
+        "  )\n"
+        )
+      list(APPEND libraries ${target})
+    elseif("${type}" STREQUAL "EXECUTABLE")
+      set(output "${target}${CMAKE_EXECUTABLE_SUFFIX}")
+      file(APPEND "${_config_in}"
+        "add_executable(${target} IMPORTED)\n"
+        "set_target_properties(${target} PROPERTIES\n"
+        "  IMPORTED_LOCATION \"\${BIN_PREFIX_DIR}/bin/${output}\"\n"
+        "  )\n"
+        )
+      list(APPEND executables ${target})
+    endif()
+  endforeach(target)
 
   # configure and install the <project>Config.cmake file
   ryppl_configure_package_config_file("${_config_in}" "${_config_install}"
