@@ -37,7 +37,7 @@ class Archive(object):
         f.flush()
 
         self.digest = check_output(
-            ['0install', 'digest', '--algorithm=sha256', f.name, self.subdir]
+            ['0install', 'digest', '--algorithm=sha1new', f.name, self.subdir]
             ).strip().split('=')[1]
 
         self.size = len(contents)

@@ -102,7 +102,7 @@ function(ryppl_export)
 
   if(EXPORT_INCLUDE_DIRECTORIES)
     set(_include_dirs "${_include_dirs}@PACKAGE_INCLUDE_DIRS@")
-    set(INSTALL_INCLUDE_DIRS "\n  \"\${PACKAGE_PREFIX_DIR}/include/\"")
+    set(INSTALL_INCLUDE_DIRS "\n  \"\${DEV_PREFIX_DIR}/include/\"")
     set(BUILD_INCLUDE_DIRS "")
 
     foreach(path ${EXPORT_INCLUDE_DIRECTORIES})

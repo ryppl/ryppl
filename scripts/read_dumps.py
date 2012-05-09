@@ -4,15 +4,16 @@
 # accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt
 import glob
-from xml.etree.cElementTree import ElementTree
+from xml.etree.cElementTree import ElementTree, Element
 from path import Path
+from lazydict import lazydict
 
 def read_dumps(dump_dir = None):
     if dump_dir is None:
         ryppl = Path('/Users/dave/src/ryppl')
         dump_dir = ryppl / 'feeds' / 'dumps'
 
-    all_dumps = {}
+    all_dumps = lazydict(lambda:Element('__NOT_WHAT_YOURE_LOOKING_FOR__'))
     for cmake_dump_file in glob.glob(dump_dir/'*.xml'):
         cmake_dump = ElementTree()
         cmake_dump.parse(cmake_dump_file)

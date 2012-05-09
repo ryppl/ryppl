@@ -4,53 +4,22 @@
 # accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt
 
-import glob, re, os, sys, shutil, urllib2
+import glob, os, sys, itertools
 from datetime import date, datetime
 from warnings import warn
-from subprocess import check_output, check_call, Popen, PIPE
+from subprocess import check_output
 from xml.etree.cElementTree import ElementTree, Element
-import dom, path
+from dom import dashtag, xml_document, xmlns
 from path import Path
 import boost_metadata
+from depgraph import *
+from transitive import *
 from uuid import uuid4 as make_uuid
 from archive import Archive
 from sign_feed import *
-
-# import multiprocessing
-
-class uniprocessing:
-    class Pool(object):
-        def apply_async(self, f, args):
-            return f(*args)
-
-        def terminate(self): pass
-        def close(self): pass
-        def join(self): pass
-
 import threadpool
-class multiprocessing:
-    class Pool(threadpool.ThreadPool):
-        def __init__(self, n = 32):
-            threadpool.ThreadPool.__init__(self, n)
-
-        def apply_async(self, f, args):
-            self.add_task(f, *args)
-
-        def terminate(self): pass
-        def close(self): pass
-
-        def join(self):
-            self.wait_completion()
-
-def content_length(uri):
-    request = urllib2.Request(uri)
-    request.get_method = lambda : 'HEAD'
-    response = urllib2.urlopen(request)
-    length = response.info().get('content-length')
-    if length:
-        return int(length)
-    else:
-        return len(urllib2.urlopen(uri).read())
+from read_dumps import read_dumps
+_ = dashtag
 
 package_prefixes = ['Boost', 'Ryppl']
 def split_package_prefix(package_name):
@@ -58,182 +27,395 @@ def split_package_prefix(package_name):
         n = len(prefix)
         if (len(package_name) > n
             and package_name.startswith(prefix)
-            and package_name[n] == package_name[n].upper()):
+            and package_name[n].isupper()):
             return prefix, package_name[n:]
     return None, package_name
 
-def requirement(package_name):
-    prefix, basename = split_package_prefix(package_name)
-    return (
-        'http://ryppl.github.com/feeds/%s%s-dev.xml'
-        % ((prefix.lower() + '/' if prefix else ''), basename)
-      , package_name + '_DIR')
+def get_brand_name(cmake_name):
+    prefix,base = split_package_prefix(cmake_name)
+    return prefix + '.' + base if prefix else base
 
-def get_build_requirements(cmake_dump):
-    requirements = set()
-    for fp in cmake_dump.findall('find-package'):
-        args = fp.findall('arg')
-        requirements.add(requirement(args[0].text))
+feed_uri_base = 'http://ryppl.github.com/feeds/'
+ryppl_feed_uri_base = feed_uri_base+'ryppl/'
+boost_feed_uri_base = feed_uri_base+'boost/'
 
-    return sorted(requirements)
+boost_icon = _.icon(
+    href='http://svn.boost.org/svn/boost/website/public_html/live/gfx/boost-dark-trans.png', 
+    type="image/png")
 
+BSL_1_0 = 'OSI Approved :: Boost Software License 1.0 (BSL-1.0)'
 
-human_component = {
-    'bin':'binaries'
-  , 'src':'source code'
-  , 'dev':'development files'
-  , 'dbg':'debugging version'
-  , 'preinstall':'built state'
-  , 'doc':'documentation'
-    }
+def boost_feed_uri(name):
+    return boost_feed_uri_base + name + '.xml'
 
-def write_feed(cmake_dump, feed_dir, source_subdir, camel_name, component, lib_metadata):
-    build_requirements = get_build_requirements(cmake_dump)
-    srcdir = cmake_dump.findtext('source-directory')
-    lib_name = os.path.basename(srcdir)
-    lib_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=srcdir).strip()
+def ryppl_feed_uri(name):
+    return ryppl_feed_uri_base + name + '.xml'
 
-    version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
+class GenerateBoost(object):
 
-    feed_name_base = brand_name = camel_name
-    if camel_name.startswith('Boost'):
-        rest = camel_name[len('Boost'):]
-        if rest[0].isupper():
-            feed_name_base = rest
-            brand_name = 'Boost.' + feed_name_base
+    def cmake_package_to_feed_uri(self, cmake_package_name, component):
+        prefix, basename = split_package_prefix(cmake_package_name)
 
-    suffix = '-%s'%component if component != 'bin' else ''
-    feed_name = feed_name_base + suffix + '.xml'
+        dump = self.dumps.get(cmake_package_name)
+        repo = (dump.findtext('source-directory') - self.source_root) if dump else basename.lower()
+        
+        return feed_uri_base + '%s%s%s.xml' \
+            % (
+                  (prefix.lower() + '/' if prefix else '')
+                , repo
+                , ('' if component == 'bin' else '-'+component)
+              )
 
-    # prepare the header of the root element
-    _ = dom.dashtag
-    iface = _.interface(
-        uri='http://ryppl.github.com/feeds/boost/' + feed_name
-      , xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
-      , **{
-            'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
-          , 'xmlns:dc':'http://purl.org/dc/elements/1.1/'
-            })[
-        _.name['%s (%s)' % (brand_name, human_component[component])]
-      , _.icon(href="http://svn.boost.org/svn/boost/website/public_html/live/gfx/boost-dark-trans.png"
-             , type="image/png")
-      ]
-
-    # These tags can be dragged directly across from our lib_metadata
-    for tag in 'summary','homepage','dc:author','description','category':
-        iface <<= lib_metadata.findall(tag)
-
-    archive_uri = 'http://nodeload.github.com/boost-lib/' + source_subdir + '/zipball/' + lib_revision
-    archive = Archive(archive_uri, source_subdir, lib_revision)
-
-    iface <<= _.group(license='OSI Approved :: Boost Software License 1.0 (BSL-1.0)')[
-        _.implementation(arch='*-src'
-                          , id=str(make_uuid())
-                          , released=date.today().isoformat()
-                          , stability='testing'
-                          , version=version
-                            )
-        [
-            _.archive(
-                extract=archive.subdir, href=archive_uri,
-                size=str(archive.size), type='application/zip')
-          , _.manifest_digest(sha256=archive.digest)
-        ]
-      , _.command(name='compile')
-        [
-            _.runner(interface='http://ryppl.github.com/feeds/ryppl/0cmake.xml')
-            [
-                _.version(**{'not-before':'0.8-pre-201204291303'})
-              , _.arg[ '--component='+component ]
-              , _.arg[ '--overlay=${BOOST_CMAKELISTS_OVERLAY}' ]
-            ]
-          , _.requires(interface='http://ryppl.github.com/feeds/boost/CMakeLists.xml')[
-                _.environment(insert=source_subdir, mode='replace', name='BOOST_CMAKELISTS_OVERLAY')
-            ]
-          , [  _.requires(interface=uri)[ _.environment(insert='.', mode='replace', name=var) ]
-                for uri,var in build_requirements ]
-          , [ dom.xmlns.compile.implementation(arch='*-*')
-              if component == 'dev' and not cmake_dump.findall('libraries/library')
-              else [] ]
-        ]
-    ]
-
-    iface.indent()
-
-    feed_path = feed_dir/feed_name
-    dom.xml_document(iface).write(feed_path, encoding='utf-8', xml_declaration=True)
-
-    sign_feed(feed_path)
-
-def run(dump_dir, feed_dir, source_root, site_metadata_file):
-    print '### deleting old feeds...'
-    for old_feed in glob.glob(os.path.join(feed_dir,'*.xml')):
-        if Path(old_feed).name != 'CMakeLists.xml':
-            os.unlink(old_feed)
-
-    print '### collecting all dumps...'
-    all_dumps = {}
-    for cmake_dump_file in glob.glob(os.path.join(dump_dir,'*.xml')):
-        cmake_dump = ElementTree()
-        cmake_dump.parse(cmake_dump_file)
-        camel_name = Path(cmake_dump_file).namebase
-        all_dumps[camel_name] = cmake_dump
-
-    print '### binary libraries:'
-    binary_libs = set(name for name, dump in all_dumps.items() if dump.find('libraries/library') is not None)
-    import pprint
-    pprint.pprint(binary_libs)
-
-    print '### Computing SCCS...'
-    from SCC import SCC
-
-    def successors(v):
+    def _dev_requirements(self, cmake_package_names):
         return [
-            lib for lib in (
-                fp.findtext('arg') for fp
-                in all_dumps.get(v, Element('x')).findall('find-package'))
-            if lib in binary_libs]
+            _.requires(interface=self.cmake_package_to_feed_uri(cmake_package, 'dev')) [
+                _.environment(insert='.', mode='replace', name=cmake_package+'_DIR')
+                ]
+            for cmake_package in set(cmake_package_names)
+            ]
 
-    sccs = SCC(lambda x:x, successors).getsccs(binary_libs)
-    import pprint
-    pprint.pprint([x for x in sccs if len(x) > 1], width=500)
+    _empty_zipball = (
+        _.archive(
+            extract='empty', href=feed_uri_base+'empty.zip'
+          , size=162, type="application/zip"
+        ), 
+        _.manifest_digest(sha1new='da39a3ee5e6b4b0d3255bfef95601890afd80709')
+        )
 
-    print '### reading Boost library metadata...'
-    t = ElementTree()
-    t.parse(site_metadata_file)
-    all_libs_metadata = t.getroot().findall('library')
 
+    class GenerateRepo(object):
+                
+        def __getattr__(self, name):
+            return getattr(self.ctx,name)
 
-    print '### Generating feeds...'
-    p = multiprocessing.Pool()
-    try:
-        for camel_name, cmake_dump in all_dumps.items():
-            print '#', camel_name
-            source_subdir = cmake_dump.findtext('source-directory') - source_root
-            lib_metadata = boost_metadata.lib_metadata(source_subdir, all_libs_metadata)
+        preinstall_feed = None
 
-            p.apply_async(
-                write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'src', lib_metadata))
+        def __init__(self, ctx, cmake_name):
+            self.ctx = ctx
+            self.cmake_name = cmake_name
+            self.in_cluster = self.cluster_map.get(cmake_name)
+            dump = self.dumps[cmake_name]
+            self.srcdir = dump.findtext('source-directory')
+            self.git_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=self.srcdir).strip()
+            self.repo = str(self.srcdir - self.source_root)
+            self.boost_metadata = boost_metadata.lib_metadata(self.repo, self.boost_metadata)
+            
+            def dump_list(xpath):
+                ret = [x.text for x in dump.findall(xpath)]
+                return ret if len(ret)>0 else None
 
-            p.apply_async(
-                write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'dev', lib_metadata))
+            self.binary_libs = dump_list('libraries/library')
+            self.executables = dump_list('executables/executable')
+            self.include_directories = dump_list('include-directories/directory')
 
-            if cmake_dump.findall('libraries/library'):
-                p.apply_async(
-                    write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'bin', lib_metadata))
-                p.apply_async(
-                    write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'preinstall', lib_metadata))
+            self.components = set()
+            if self.binary_libs or self.executables:
+                self.components.add('bin')
+            if self.include_directories:
+                self.components.add('dev')
 
-            p.apply_async(
-                write_feed, (cmake_dump, feed_dir, source_subdir, camel_name, 'dbg', lib_metadata))
-    except:
-        p.terminate()
-        raise
+            self.brand_name = get_brand_name(cmake_name)
+            self.build_dependencies = self.transitive_dependencies[cmake_name]
+            assert cmake_name not in self.build_dependencies, "Self-loop detected: "+cmake_name
 
-    print '### Awaiting completion...'
-    p.close()
-    p.join()
-    print '### Done.'
+            print '##', self.brand_name
+
+            if self.in_cluster:
+                self.tasks.add_task(self._write_src_feed)
+                self.preinstall_feed = self._cluster_feed_name(self.in_cluster)
+                self.preinstall_subdirectory = self.repo + '/'
+
+            # if there is more than one build product, we need a
+            # preinstall feed.  Cluster preinstall feeds are handled
+            # separately.
+            elif len(self.components) > 1:
+                self.preinstall_feed = self.repo + '-preinstall'
+                self.preinstall_subdirectory = ''
+                self.build('preinstall')
+
+            if self.preinstall_feed:
+                for c in self.components:
+                    self.copy_from_preinstall(c)
+            else:
+                # No preinstall => header-only or executable-only, but not both
+                sys.stdout.flush()
+                assert len(self.components) <= 1
+                for x in self.components:
+                    self.build(iter(self.components).next())
+
+        def copy_from_preinstall(self, component):
+            self.tasks.add_task(
+                self._write_feed, component
+                , self._implementation('*-src') [ self._empty_zipball ]
+                , _.command(name='compile') [
+                    _.runner(interface=feed_uri_base+'cmake.xml') [
+                        [_.arg[ x ] for x in '-E copy_directory ${SRCDIR} ${DISTDIR}'.split()]
+                        ]
+                    , _.requires(interface=boost_feed_uri(self.preinstall_feed)) [
+                        _.environment(
+                            insert=self.preinstall_subdirectory + component, 
+                            mode='replace', name='SRCDIR')
+                        ]
+                    , self.implementation_template(component)
+                    ]
+                )
+        
+        def implementation_template(self, component):
+            if component == 'dev' and not self.binary_libs:
+                # Header-only -dev feeds can be marked architecture-independent
+                # TODO: can we make -dev a *-* feed on Posix always, since there's no implib?
+                return xmlns.compile.implementation(arch='*-*')
+            elif component == 'bin' and self.executables:
+                 # -bin feeds with executables should include their run commands
+                return xmlns.compile.implementation() [
+                          [ _.command(name='run', path=x) for x in self.executables[:1] ]
+                        , [ _.command(name=x, path=x) for x in self.executables[1:]]
+                          ]
+            else:
+                return None
+            
+        def build(self, component):
+            self.tasks.add_task(
+                self._write_feed, component
+                ,  self._git_snapshot('*-src') 
+                     if component == 'preinstall' or not self.preinstall_feed 
+                   else self._implementation('*-src')[ self._empty_zipball ]
+                , _.command(name='compile') [
+                    _.runner(interface=ryppl_feed_uri('0cmake')) [
+                        _.arg[ '--overlay=${BOOST_CMAKELISTS}' ] 
+                        , _.arg[ '--build-type=Debug' ] if component == 'dbg' else None
+                        , [_.arg[ c ] for c in self.components]
+                        ]
+
+                    , _.requires(interface=boost_feed_uri('CMakeLists'))[
+                        _.environment(insert=self.repo, mode='replace', name='BOOST_CMAKELISTS')
+                        ]
+                    , self._dev_requirements(self.build_dependencies)
+                    , self.implementation_template(component)
+                    ]
+                )
+
+        
+        def _feed_name(self, component):
+            return self.repo + ('' if component == 'bin' else '-'+component) + '.xml'
+            
+        def _write_feed(self, component, *contents):
+            interface = self._interface(component)[ 
+                _.group(license=BSL_1_0) [
+                    contents 
+                ]
+            ]
+            interface.indent()
+            feed_path = self.feed_dir/self._feed_name(component)
+            xml_document(interface).write(feed_path, encoding='utf-8', xml_declaration=True)
+            sys.stdout.flush()
+
+            sign_feed(feed_path)
+            
+
+        def _feed_uri(self, component):
+            return boost_feed_uri_base+self._feed_name(component)
+
+        _human_component = {
+            'bin':'binaries'
+            , 'src':'source code'
+            , 'dev':'development files'
+            , 'dbg':'debugging version'
+            , 'preinstall':'built state'
+            , 'doc':'documentation'
+            }
+
+        def _interface(self, component):
+            interface = _.interface(
+                uri=self._feed_uri(component)
+              , xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
+              , **{
+                    'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
+                  , 'xmlns:dc':'http://purl.org/dc/elements/1.1/'
+                    })[
+                _.name['%s (%s)' % (self.brand_name, self._human_component[component])]
+              , boost_icon
+              ]
+
+            # These tags can be dragged directly across from our lib_metadata
+            for tag in 'summary','homepage','dc:author','description','category':
+                interface <<= self.boost_metadata.findall(tag)
+
+            return interface
+
+        def _git_snapshot(self, arch):
+            git_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=self.srcdir).strip()
+            archive_uri = 'http://nodeload.github.com/boost-lib/' + self.repo + '/zipball/' + git_revision
+            zipball = Archive(archive_uri, self.repo, git_revision)
+
+            return self._implementation(arch) [
+                _.archive(extract=zipball.subdir, href=archive_uri, size=zipball.size, type='application/zip')
+              , _.manifest_digest(sha1new=zipball.digest)
+            ]
+
+        def _write_src_feed(self):
+            self._write_feed(
+                'src'
+               , self._git_snapshot('*-*')
+                )
+
+    def _build_dependencies(self, cmake_package_name):
+        return self.transitive_dependencies[cmake_package_name]
+
+    def _implementation(self, arch):
+        return _.implementation(
+            arch=arch, id=make_uuid(), released=date.today().isoformat(), 
+            stability='testing', version=self.version)
+
+    def _write_cluster_feed(self, cluster):
+        feed_name = self._cluster_feed_name(cluster)
+        
+        subdirs = dict((self._src_dir_name(x),x) for x in cluster)
+        
+        interface = _.interface(
+            uri=boost_feed_uri(feed_name)
+            , xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
+            , **{
+                'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
+                , 'xmlns:dc':'http://purl.org/dc/elements/1.1/'
+                })[
+            _.name['%s (built state)' % ', '.join(cluster),]
+            , _.summary['Evil Build Dependency Cluster (EBDC)']
+            , boost_icon
+            , _.group(license=BSL_1_0)
+            [
+                self._implementation('*-src')[self._empty_zipball]
+                , _.command(name='compile') [
+
+                    _.runner(interface=ryppl_feed_uri('0cmake')) 
+                    [
+                        _.arg[ '--overlay=${BOOST_CMAKELISTS}' ] 
+
+                        # , _.arg[ '--build-type=Debug' ] if component == 'dbg' else []
+                        
+                        , [ _.arg[x] 
+                            for d,c in subdirs.items()
+                            for x in ['--add-subdirectory', '${%s_SRCDIR}' % c, d ]
+                            ]
+
+                        # Component selection may be too naive here in
+                        # general, but hopefully this whole block will
+                        # be obsolete as we eliminate clusters
+                        , [ _.arg[ d+'/'+component ] for component in 'dev','bin' for d in subdirs ]
+                        ]
+
+                    , [
+                        _.requires(interface=boost_feed_uri(d+'-src')) [
+                            _.environment(insert='.', mode='replace', name=c+'_SRCDIR')
+                            ]
+                        for d,c in subdirs.items()]
+
+                    , _.requires(interface=boost_feed_uri('CMakeLists'))[
+                        _.environment(insert='.', mode='replace', name='BOOST_CMAKELISTS')
+                        ]
+
+                    , self._dev_requirements(
+                            dep for x in cluster for dep in self._build_dependencies(x)
+                            if dep not in cluster
+                            )
+                    ]
+                ]
+            ]
+
+        interface.indent()
+        feed_path = self.feed_dir/feed_name+'.xml'
+        xml_document(interface).write(feed_path, encoding='utf-8', xml_declaration=True)
+        sign_feed(feed_path)
+
+    def _delete_old_feeds(self):
+        print '### deleting old feeds...'
+        for old_feed in glob.glob(os.path.join(self.feed_dir,'*.xml')):
+            if Path(old_feed).name != 'CMakeLists.xml':
+                os.unlink(old_feed)
+
+    # I think this will end up being unused
+    def _cluster_name(self, cluster):
+        splits = [ split_package_prefix(x) for x in cluster ]
+        prefix = splits[0][0]
+
+        names = cluster
+        if prefix and all(splits[1:][0] == prefix):
+            names = [prefix] + [x[1] for x in splits]
+
+        return '-'.join(names)
+        
+    def _src_dir_name(self, cmake_package_name):
+        return Path(self.dumps[cmake_package_name].findtext('source-directory')).name
+
+    def _cluster_feed_name(self, cluster):
+        return '-'.join(self._src_dir_name(x) for x in cluster) + '-preinstall'
+
+    def _find_dependency_cycles(self):
+        print '### Checking for dependency cycles... ',
+        from SCC import SCC
+
+        successors = Successors(self.dumps)
+
+        # Find all Strongly-Connected Components (SCCs) that contain
+        # multiple vertices.  Each of these must be built as a unit
+        self.clusters = set(
+            tuple(sorted(s))
+            for s in SCC(str,lambda v: successors(self.dumps,v)).getsccs(self.dumps)
+            if len(s) > 1)
+        
+        if len(self.clusters) > 0:
+            warn( 
+                'Build dependency graph contains cycles.  All SCCs:\n'
+                + repr(self.clusters))
+
+        # Map each cmake module into its cluster
+        self.cluster_map = dict(
+            (lib, cluster) for cluster in self.clusters for lib in cluster)
+        
+    def __init__(self, dump_dir, feed_dir, source_root, site_metadata_file):
+        self.dump_dir = dump_dir
+        self.feed_dir = feed_dir
+        self.source_root = source_root
+
+        self.dumps = read_dumps(self.dump_dir)
+
+        self.transitive_dependencies = to_mutable_graph(self.dumps)
+        inplace_transitive_closure(self.transitive_dependencies)
+        
+        # eliminate self-loops
+        for v0,v1s in self.transitive_dependencies.items():
+            v1s.discard(v0)
+        
+        # Make sure there are no modularity violations
+        self._find_dependency_cycles()
+        
+        self.version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
+        print '### new version =', self.version
+
+        print '### reading Boost library metadata...'
+        t = ElementTree()
+        t.parse(site_metadata_file)
+        self.boost_metadata = t.getroot().findall('library')
+
+        self._delete_old_feeds()
+            
+        use_threads = True
+        if use_threads: 
+            self.tasks = threadpool.ThreadPool(8)
+        else:
+            class Tasks(object): 
+                def add_task(self, f, *args): return f(*args)
+            self.tasks = Tasks()
+
+        for cluster in self.clusters:
+            self.tasks.add_task(self._write_cluster_feed, cluster)
+
+        for cmake_name in self.dumps:
+            self.GenerateRepo(self, cmake_name)
+
+        print '### Awaiting completion...'
+        self.tasks.wait_completion()
+        print '### Done.'
 
 if __name__ == '__main__':
     argv = sys.argv
@@ -242,7 +424,7 @@ if __name__ == '__main__':
     feeds = ryppl / 'feeds'
     lib_db_default = '/Users/dave/src/boost/svn/website/public_html/live/doc/libraries.xml'
 
-    run(dump_dir=Path(argv[1] if len(argv) > 1 else feeds/'dumps')
+    GenerateBoost(dump_dir=Path(argv[1] if len(argv) > 1 else feeds/'dumps')
       , feed_dir=Path(argv[2] if len(argv) > 2 else feeds/'boost')
       , source_root=Path(argv[3] if len(argv) > 3 else ryppl/'boost-zero'/'boost')
       , site_metadata_file=Path(argv[4] if len(argv) > 4 else lib_db_default)
