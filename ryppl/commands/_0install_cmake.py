@@ -101,7 +101,7 @@ def run(args):
         component = subdir_component[-1]
         
         cmake(
-            ([] if component in ['preinstall','dev'] else ['-DCOMPONENT='+component])
+            ([] if component == 'preinstall' else ['-DCOMPONENT='+component])
             + [ '-DCMAKE_INSTALL_PREFIX='+prefix, '-P', 'cmake_install.cmake' ]
             )
 
