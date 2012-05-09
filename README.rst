@@ -21,8 +21,8 @@ intend to extend it to support multiple user-level commands.
 Resources
 ---------
 
-Home Page: http://ryppl.org
-Repositories: http://github.com/ryppl
+* Home Page: http://ryppl.org
+* Repositories: http://github.com/ryppl
 
 .. _0compile: http://0install.net/0compile.html
 .. _0install: http://0install.net
