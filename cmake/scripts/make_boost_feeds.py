@@ -21,6 +21,8 @@ import threadpool
 from read_dumps import read_dumps
 _ = dashtag
 
+generated_feeds = set()
+
 package_prefixes = ['Boost', 'Ryppl']
 def split_package_prefix(package_name):
     for prefix in package_prefixes:
@@ -229,6 +231,8 @@ class GenerateBoost(object):
             ]
             interface.indent()
             feed_path = self.feed_dir/self._feed_name(component)
+            assert feed_path not in generated_feeds
+            generated_feeds.add(feed_path)
             xml_document(interface).write(feed_path, encoding='utf-8', xml_declaration=True)
             sys.stdout.flush()
 
@@ -412,7 +416,7 @@ class GenerateBoost(object):
         # Make sure there are no modularity violations
         self._find_dependency_cycles()
         
-        self.version = '1.49-post-' + datetime.utcnow().strftime("%Y%m%d%H%M")
+        self.version = '1.49-post-' + datetime.utcnow().strftime("%Y.%m.%d.%H%M")
         print '### new version =', self.version
 
         print '### reading Boost library metadata...'
