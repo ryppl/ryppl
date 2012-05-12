@@ -28,16 +28,16 @@ def digraph(g, formatter=Formatter(), **kw):
     result.append('}')
     return '\n'.join(result)
 
-def show_graphviz(text):
+def show_graphviz(text, format='pdf'):
     graph = tempfile.NamedTemporaryFile(suffix='.gv',delete=False)
     graph.write(text)
     graph.flush()
 
-    svg = tempfile.NamedTemporaryFile(suffix='.svg', delete=False)
-    svg.write(
-        subprocess.check_output(['dot','-Tsvg',graph.name]))
-    svg.flush()
-    subprocess.check_call(['open',svg.name])
+    result = tempfile.NamedTemporaryFile(suffix='.'+format, delete=False)
+    result.write(
+        subprocess.check_output(['dot','-T'+format,graph.name]))
+    result.flush()
+    subprocess.check_call(['open',result.name])
     
 def show_digraph(g, **kw):
     show_graphviz(digraph(g, **kw))
