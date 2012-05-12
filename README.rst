@@ -4,7 +4,7 @@
 A Software Ecosystem Driver
 ===========================
 
-.. image:: http://ryppl.github.com/_static/ryppl.png
+.. image:: http://ryppl.github.com/old/_static/ryppl.png
    :align: right
 
 ---------------------------
