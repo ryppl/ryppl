@@ -23,13 +23,12 @@ intend to extend it to support multiple user-level commands.
 
   <group license="OSI Approved :: Boost Software License 1.0 (BSL-1.0)">
     <implementation id='.' version='0.8-post' stability="testing"/>
-    <command name='run' path='bin/ryppl'>
-      <runner interface='http://repo.roscidus.com/python/python'>
-        <version before='3'/>
+    <command name="run" path="bin/ryppl">
+      <runner interface="http://repo.roscidus.com/python/python">
+        <version before="3"/>
       </runner>
-      <requires interface='http://ryppl.github.com/feeds/ryppl/CMakeSupport.xml'>
-        <version not-before='0.8-pre-201205050948' />
-        <environment insert="Modules" mode="replace" name="RYPPL_CMAKE_MODULE_PATH"/>
+      <requires interface="http://ryppl.github.com/feeds/ryppl/ryppl.xml">
+        <environment insert="cmake/Modules" mode="replace" name="RYPPL_CMAKE_MODULE_PATH"/>
       </requires>
     </command>
   </group>
