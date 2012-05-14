@@ -32,7 +32,14 @@ class Archive(object):
         self.subdir = 'boost-lib-' + source_subdir + '-' + revision[:7]
 
         f = tempfile.NamedTemporaryFile(suffix='.zip')
-        contents = urllib2.urlopen(uri).read()
+        try:
+            contents = urllib2.urlopen(uri).read()
+        except:
+            print 'failed uri:', uri
+            import sys
+            sys.stdout.flush()
+            raise
+
         f.write(contents)
         f.flush()
 
