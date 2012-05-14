@@ -54,9 +54,11 @@ def run(dump_dir=None):
     class Format(object):
         def vertex_attributes(self, s):
             ret = ['color='+color[s]] if s in color else []
-            ret += ['fontsize=9']
+            ret += ['fontsize=9', 'fontname=GillSans']
             if dumps[s].find('libraries/library') is not None:
                 ret+=['shape=box3d','style=bold']
+            if s.startswith('Boost') and len(s) > len('Boost'):
+                ret +=['label=".'+s[len('Boost'):]+'"']
             return ret
 
         def edge_attributes(self, s, t):
@@ -65,14 +67,16 @@ def run(dump_dir=None):
             elif t in t_redux[s]:
                 return ['style=dashed','arrowhead=open','color=blue']
             else:
-                return ['style=dotted','color=gray']
+                return ['style=dashed','color=lightgray']
 
     if '--all' in sys.argv[1:]:
-        full_graph = dict((v, direct_graph[v] | t_redux[v]) for v in g)
-        show_digraph(full_graph, formatter=Format(), layout='neato', overlap='scalexy', ordering='out', splines='true')
+        # full_graph = dict((v, direct_graph[v] | t_redux[v]) for v in g)
+        full_graph = to_mutable_graph(g, vertex_filter=V.__contains__)
+        # show_digraph(full_graph, formatter=Format(), ranksep=0.5, nodesep=0.05, splines='true', layout='dot')
+        show_digraph(full_graph, formatter=Format(), layout='neato', overlap='false', ordering='out', nodesep=0.05, splines='true')
     else:
         full_graph = to_mutable_graph(g, vertex_filter=V.__contains__)
-        show_digraph(full_graph, formatter=Format(), ranksep=1.8, splines='true', layout='dot')
+        show_digraph(full_graph, formatter=Format(), ranksep=0.5, nodesep=0.05, splines='true', layout='dot')
 
 if __name__ == '__main__':
     argv = set(sys.argv[1:])
