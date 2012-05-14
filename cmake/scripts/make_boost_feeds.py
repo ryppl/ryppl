@@ -285,7 +285,7 @@ class GenerateBoost(object):
             ]
 
         def _write_src_feed(self):
-            self_loop = set(self.cmake_name)
+            self_loop = set([self.cmake_name])
 
             dump = self.dumps[self.cmake_name]
             build_deps = (
