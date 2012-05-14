@@ -190,3 +190,4 @@ class Path(_base):
     return map(Path, glob(_base(self/pattern)))
 
 curdir = Path(os.path.curdir)
+pardir = Path(os.path.pardir)
