@@ -464,12 +464,26 @@ class GenerateBoost(object):
         self._delete_old_feeds()
             
         use_threads = True
-        if use_threads: 
-            self.tasks = threadpool.ThreadPool(8)
-        else:
-            class Tasks(object): 
-                def add_task(self, f, *args): return f(*args)
-            self.tasks = Tasks()
+        class Tasks(object):
+            if use_threads:
+                def __init__(self):
+                    self.pool = threadpool.ThreadPool(100)
+                def add_task(self, f, *args):
+                    #print '###', f.__name__, args[:1]
+                    def tsk(*args):
+                        #print '>>>', f.__name__, args[:1]
+                        f(*args)
+                        #print '<<<', f.__name__, args[:1]
+                    self.pool.add_task(tsk, *args)
+                def wait_completion(self):
+                    self.pool.wait_completion()
+            else:
+                def add_task(self, f, *args): 
+                    return f(*args)
+                def wait_completion(self): 
+                    pass
+
+        self.tasks = Tasks()
 
         for cluster in self.clusters:
             self.tasks.add_task(self._write_cluster_feed, cluster)
