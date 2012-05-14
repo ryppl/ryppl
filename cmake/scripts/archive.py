@@ -17,10 +17,11 @@ class Archive(object):
             arch = pickle.load(open(cache_file))
             if arch.key == key:
                 return arch
-        except:
+        except Exception,e:
             pass
 
         result = object.__new__(cls, uri, source_subdir, revision)
+        result.__init__(uri, source_subdir, revision)
         if not os.path.isdir(cls.cache_dir):
             os.makedirs(cls.cache_dir)
         pickle.dump(result, open(cache_file, 'w'))
