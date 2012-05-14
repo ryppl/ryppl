@@ -249,6 +249,7 @@ class GenerateBoost(object):
         _human_component = {
             'bin':'binaries'
             , 'src':'source code'
+            , 'rawsrc':'raw source code'
             , 'dev':'development files'
             , 'dbg':'debugging version'
             , 'preinstall':'built state'
@@ -301,7 +302,7 @@ class GenerateBoost(object):
                     
         def _write_rawsrc_feed(self):
             self._write_feed(
-                'src'
+                'rawsrc'
                , self._git_snapshot('*-*')
                 )
 
