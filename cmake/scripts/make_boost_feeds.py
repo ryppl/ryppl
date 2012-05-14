@@ -67,7 +67,7 @@ class GenerateBoost(object):
             % (
                   (prefix.lower() + '/' if prefix else '')
                 , repo
-                , ('' if component == 'bin' else '-'+component)
+                , ('' if component == 'bin' else '-dev' if prefix != 'Boost' else '-'+component)
               )
 
     def has_binary_lib(self, cmake_package_name):
@@ -285,20 +285,34 @@ class GenerateBoost(object):
             ]
 
         def _write_src_feed(self):
+            self_loop = set(self.cmake_name)
+
+            dump = self.dumps[self.cmake_name]
+            build_deps = (
+                set(fp.findtext('arg') for fp in dump.findall('find-package'))
+                | set(ud.text for ud in dump.findall('depends/dependency'))
+                ) - self_loop
+
             src_dump = self.src_dumps[self.cmake_name]
-
-            deps = set(fp.findtext('arg') for fp in src_dump.findall('find-package')) \
-                | set(d.text for d in src_dump.findall('depends/dependency'))
-
-            deps.discard(self.cmake_name)
+            develop_deps = (
+                set(fp.findtext('arg') for fp in src_dump.findall('find-package'))
+                - build_deps - self_loop)
 
             self._write_feed(
                 'src'
                 , self._git_snapshot('*-*')
                 , [
                     _.requires(interface=self.cmake_package_to_feed_uri(cmake_package, 'src'))
-                    for cmake_package in deps
-                    ])
+                    for cmake_package in build_deps
+                    ]
+                , _.command(name='develop') [
+                    _.runner(interface=ryppl_feed_uri('ryppl'))
+                    , [
+                        _.requires(interface=self.cmake_package_to_feed_uri(cmake_package, 'src'))
+                        for cmake_package in develop_deps
+                        ]
+                    ]
+                )
                     
         def _write_rawsrc_feed(self):
             self._write_feed(
