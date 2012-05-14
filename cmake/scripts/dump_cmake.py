@@ -6,13 +6,19 @@
 # http://www.boost.org/LICENSE_1_0.txt
 
 import os
+import sys
 import shutil
 from tempdir import TempDir
 from subprocess import *
 from path import Path
 
 home = Path(os.environ['HOME'])
-dump_dir = home / 'src' / 'ryppl' / 'feeds' / 'dumps'
+feeds = home / 'src' / 'ryppl' / 'feeds'
+if '--src' in sys.argv[1:]:
+    dump_dir = feeds / 'src_dumps'
+else:
+    dump_dir = feeds / 'dumps'
+
 boost_zero = home / 'src' / 'ryppl' / 'boost-zero'
 
 if __name__ == '__main__':
@@ -25,9 +31,13 @@ if __name__ == '__main__':
 
         try:
             os.chdir(build_dir)
+            print '### build_dir =',build_dir
             print '### CMake first pass...'
-            args = ['cmake', '-DRYPPL_PROJECT_DUMP_DIRECTORY='+dump_dir, 
-                    '-DRYPPL_DISABLE_TESTS=1', '-DRYPPL_DISABLE_DOCS=1', boost_zero]
+            args = ['cmake', '-DRYPPL_PROJECT_DUMP_DIRECTORY='+dump_dir]
+            if '--src' not in sys.argv[1:]:
+                args += ['-DRYPPL_DISABLE_TESTS=1', '-DRYPPL_DISABLE_DOCS=1' ]
+            args += [boost_zero]
+
             env = os.environ.copy()
             env['PATH'] += os.pathsep + '/opt/local/lib/openmpi/bin'
             p = Popen(args, env=env, stdout=open(os.devnull,'w'), stderr=PIPE)
