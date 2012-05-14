@@ -21,6 +21,8 @@ import threadpool
 from read_dumps import read_dumps
 _ = dashtag
 
+os.environ['DISPLAY']=''
+
 generated_feeds = set()
 
 package_prefixes = ['Boost', 'Ryppl']
