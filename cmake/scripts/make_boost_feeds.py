@@ -10,7 +10,7 @@ from warnings import warn
 from subprocess import check_output
 from xml.etree.cElementTree import ElementTree, Element
 from dom import dashtag, xml_document, xmlns
-from path import Path
+from path import Path, pardir
 import boost_metadata
 from depgraph import *
 from transitive import *
@@ -144,8 +144,10 @@ class GenerateBoost(object):
 
             print '##', self.brand_name
 
+            self.tasks.add_task(self._write_src_feed)
+
             if self.in_cluster:
-                self.tasks.add_task(self._write_src_feed)
+                self.tasks.add_task(self._write_rawsrc_feed)
                 self.preinstall_feed = self._cluster_feed_name(self.in_cluster)
                 self.preinstall_subdirectory = self.repo + '/'
 
@@ -282,6 +284,22 @@ class GenerateBoost(object):
             ]
 
         def _write_src_feed(self):
+            src_dump = self.src_dumps[self.cmake_name]
+
+            deps = set(fp.findtext('arg') for fp in src_dump.findall('find-package')) \
+                | set(d.text for d in src_dump.findall('depends/dependency'))
+
+            deps.discard(self.cmake_name)
+
+            self._write_feed(
+                'src'
+                , self._git_snapshot('*-*')
+                , [
+                    _.requires(interface=self.cmake_package_to_feed_uri(cmake_package, 'src'))
+                    for cmake_package in deps
+                    ])
+                    
+        def _write_rawsrc_feed(self):
             self._write_feed(
                 'src'
                , self._git_snapshot('*-*')
@@ -334,7 +352,7 @@ class GenerateBoost(object):
                         ]
 
                     , [
-                        _.requires(interface=boost_feed_uri(d+'-src')) [
+                        _.requires(interface=boost_feed_uri(d+'-rawsrc')) [
                             _.environment(insert='.', mode='replace', name=c+'_SRCDIR')
                             ]
                         for d,c in subdirs.items()]
@@ -401,12 +419,14 @@ class GenerateBoost(object):
         self.cluster_map = dict(
             (lib, cluster) for cluster in self.clusters for lib in cluster)
         
-    def __init__(self, dump_dir, feed_dir, source_root, site_metadata_file):
+    def __init__(self, dump_dir, feed_dir, source_root, site_metadata_file, src_dump_dir):
         self.dump_dir = dump_dir
+        self.src_dump_dir = src_dump_dir
         self.feed_dir = feed_dir
         self.source_root = source_root
 
         self.dumps = read_dumps(self.dump_dir)
+        self.src_dumps = read_dumps(self.src_dump_dir)
 
         self.transitive_dependencies = to_mutable_graph(self.dumps)
         inplace_transitive_closure(self.transitive_dependencies)
@@ -453,8 +473,11 @@ if __name__ == '__main__':
     feeds = ryppl / 'feeds'
     lib_db_default = '/Users/dave/src/boost/svn/website/public_html/live/doc/libraries.xml'
 
-    GenerateBoost(dump_dir=Path(argv[1] if len(argv) > 1 else feeds/'dumps')
+    dump_dir = Path(argv[1]) if len(argv) > 1 else feeds/'dumps'
+    GenerateBoost(
+        dump_dir=dump_dir
       , feed_dir=Path(argv[2] if len(argv) > 2 else feeds/'boost')
       , source_root=Path(argv[3] if len(argv) > 3 else ryppl/'boost-zero'/'boost')
       , site_metadata_file=Path(argv[4] if len(argv) > 4 else lib_db_default)
+      , src_dump_dir=Path(argv[5] if len(argv) > 5 else (dump_dir / pardir / 'src_dumps').normpath)
         )
