@@ -4,7 +4,8 @@
 import sys
 import os
 
-from ryppl.support._argparse import valid_0install_feed
+from ryppl.support.path import *
+from ryppl.support._argparse import valid_0install_feed, creatable_path
 import zeroinstall.injector.requirements
 import zeroinstall.injector.config
 import zeroinstall.injector.driver
@@ -24,15 +25,13 @@ def command_line_interface(cli):
         , type=valid_0install_feed
         , help='0install feed of Ryppl project to develop')
 
-def solve(args):
-    config = zeroinstall.injector.config.load_config()
-    
-    # Only download new feed information every hour unless otherwise
-    # specified.  NOTE: You can raise this value, but lower values
-    # will be ignored unless you also monkeypatch
-    # zeroinstall.injector.iface_cache.FAILED_CHECK_DELAY
-    config.freshness = 60*60
-    
+    cli.add_argument(
+        'workspace'
+        , nargs=1
+        , type=creatable_path
+        , help='Path to project workspace directory, which must not already exist')
+
+def solve(args, config):
     selections = None
     versions = {}
     for iface_uri in args.feed:
@@ -68,11 +67,40 @@ def solve(args):
                 selections.selections[uri] = sel
     return selections
 
+def git_clone_feed(feed, tree_ish, where, id, config):
+    print feed.get_name()# , where, feed.metadata, feed.implementations[id]
+    for x in feed.metadata:
+        print x
+    print
+
+
+def generate(args, selections, config):
+    workspace = args.workspace[0]
+    dep_dir = workspace/'.dependencies'
+    os.makedirs(dep_dir)
+
+    for uri,sel in selections.selections.items():
+        feed = config.iface_cache.get_feed(uri)
+        if feed.implementations.get(sel.id):
+            git_clone_feed(
+                feed
+                , sel.attrs['version']
+                , workspace if uri in args.feed else dep_dir
+                , sel.id
+                , config)
+            
+
 def run(args):
     # Suppress all 0install GUI elements
     os.environ['DISPLAY']=''
 
-    selections = solve(args)
-    import pprint
-    pprint.pprint([(x[0],x[1].attrs) for x in selections.selections.items()])
+    config = zeroinstall.injector.config.load_config()
+    # Only download new feed information every hour unless otherwise
+    # specified.  NOTE: You can raise this value, but lower values
+    # will be ignored unless you also monkeypatch
+    # zeroinstall.injector.iface_cache.FAILED_CHECK_DELAY
+    config.freshness = 60*60
+    
+    selections = solve(args, config)
+    generate(args, selections, config)
 
