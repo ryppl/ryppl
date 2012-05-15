@@ -4,6 +4,8 @@
 # accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt
 
+import os, sys
+sys.path = [os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ryppl', 'support')] + sys.path
 import glob, os, sys, itertools
 from datetime import date, datetime
 from warnings import warn
