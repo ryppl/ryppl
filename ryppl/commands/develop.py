@@ -24,9 +24,7 @@ def command_line_interface(cli):
         , type=valid_0install_feed
         , help='0install feed of Ryppl project to develop')
 
-def run(args):
-    # Suppress all 0install GUI elements
-    os.environ['DISPLAY']=''
+def solve(args):
     config = zeroinstall.injector.config.load_config()
     
     # Only download new feed information every hour unless otherwise
@@ -34,7 +32,9 @@ def run(args):
     # will be ignored unless you also monkeypatch
     # zeroinstall.injector.iface_cache.FAILED_CHECK_DELAY
     config.freshness = 60*60
-
+    
+    selections = None
+    versions = {}
     for iface_uri in args.feed:
         requirements = zeroinstall.injector.requirements.Requirements(iface_uri)
         requirements.command = 'develop'
@@ -59,8 +59,20 @@ def run(args):
         if not driver.solver.ready:
             raise driver.solver.get_failure_reason()
 
-        import pprint
-        pprint.pprint([(x[0],x[1].attrs) for x in driver.solver.selections.selections.items()])
+        if not selections:
+            selections = driver.solver.selections
+        else:
+            for uri,sel in driver.solver.selections.selections.items():
+                v = versions.setdefault(uri, sel.attrs['version'])
+                assert v == sel.attrs['version'], 'Version mismatch; not yet supported.'
+                selections.selections[uri] = sel
+    return selections
 
-if __name__ == '__main__':
-    test()
+def run(args):
+    # Suppress all 0install GUI elements
+    os.environ['DISPLAY']=''
+
+    selections = solve(args)
+    import pprint
+    pprint.pprint([(x[0],x[1].attrs) for x in selections.selections.items()])
+
