@@ -265,9 +265,12 @@ class GenerateBoost(object):
               , **{
                     'xmlns:compile':'http://zero-install.sourceforge.net/2006/namespaces/0compile'
                   , 'xmlns:dc':'http://purl.org/dc/elements/1.1/'
+                  , 'xmlns:ryppl':'http://ryppl.org/2012'
                     })[
                 _.name['%s (%s)' % (self.brand_name, self._human_component[component])]
               , boost_icon
+              , xmlns.ryppl.repository(
+                    type="git", href='http://github.com/boost-lib/%s.git' % self.repo)
               ]
 
             # These tags can be dragged directly across from our lib_metadata
