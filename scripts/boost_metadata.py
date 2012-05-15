@@ -52,7 +52,7 @@ def lib_metadata(source_subdirectory, all_metadata):
         _.summary[summary],
         _.homepage[homepage],
         [xmlns.dc.author[a] for a in authors],
-        [_.category(type='http://boost.org/lib-categories')[c] for c in categories]
+        [_.category(type='http://boost.org/lib-categories/2012')[c] for c in categories]
         ]
 
     if description:
