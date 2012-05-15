@@ -1,4 +1,5 @@
 from distutils.core import setup
+from pkg_resources import EntryPoint
 import setuptools
 
 version = __import__('ryppl').__version__
@@ -16,6 +17,8 @@ setup(
                    'Operating System :: OS Independent',
                    'Programming Language :: Python'],
     packages = ['ryppl', 'ryppl.commands'],
+    entry_points=dict(console_scripts=['ryppl = ryppl.main:run']),
     scripts = ['bin/ryppl'],
+
     long_description = open('README.rst').read(),
 )

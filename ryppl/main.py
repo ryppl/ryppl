@@ -5,9 +5,10 @@
 
 import argparse
 import commands
+import sys
 from commands import *
 
-def run(argv):
+def run():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(help='sub-commands')
     parser.add_argument('--verbose', action='store_true')
@@ -23,6 +24,6 @@ def run(argv):
         subparser.set_defaults(runner=cmd_module.run)
         cmd_module.command_line_interface(subparser)
 
-    parsed_args = parser.parse_args(argv[1:])
+    parsed_args = parser.parse_args(sys.argv[1:])
     parsed_args.runner(parsed_args)
     
