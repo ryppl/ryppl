@@ -45,12 +45,12 @@ def run(args):
         refresh = args.refresh
         if not refresh:
             # Note that need_download() triggers a solve
-            if driver.need_download():
-                refresh = any(
-                    feed for feed in driver.solver.feeds_used if
-                    # Ignore (memory-only) PackageKit feeds
-                    not feed.startswith('distribution:') and
-                    config.iface_cache.is_stale(feed, config.freshness))
+            driver.need_download()
+            refresh = any(
+                feed for feed in driver.solver.feeds_used if
+                # Ignore (memory-only) PackageKit feeds
+                not feed.startswith('distribution:') and
+                config.iface_cache.is_stale(feed, config.freshness))
 
         blocker = driver.solve_with_downloads(refresh)
         if blocker:
