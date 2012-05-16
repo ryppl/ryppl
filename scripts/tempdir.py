@@ -1,3 +1,4 @@
+import sys_path_setup
 import tempfile
 import os
 import shutil
