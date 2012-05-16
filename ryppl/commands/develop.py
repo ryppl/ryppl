@@ -9,6 +9,7 @@ from ryppl.support._argparse import valid_0install_feed, creatable_path
 import zeroinstall.injector.requirements
 import zeroinstall.injector.config
 import zeroinstall.injector.driver
+from subprocess import check_call
 
 def command_line_interface(cli):
     '''Set up a project workspace for the given feeds'''
@@ -69,17 +70,36 @@ def solve(args, config):
 
 def git_clone_feed(feed, tree_ish, where, id, config):
     print feed.get_name()# , where, feed.metadata, feed.implementations[id]
-    for x in feed.metadata:
-        print x
-    print
+    repos = [
+        x for x in feed.metadata 
+        if x.uri == 'http://ryppl.org/2012' and x.name == 'vcs-repository'
+        ]
+    if len(repos) == 0:
+        return
+    assert len(repos) == 1
 
+    repo = repos[0]
+    submodule_name = repo.attrs['href'].rsplit('/',1)[-1].rsplit('.',1)[0]
+    work_dir = where/submodule_name
+    check_call(['git', 'submodule', 'add', '-f', repo.attrs['href'], 
+                work_dir.realpath - Path(os.getcwd()).realpath])
+    implementation = feed.implementations[id]
+    tree_ish = implementation.metadata['http://ryppl.org/2012 vcs-revision']
+    check_call(['git', 'checkout', '-q', tree_ish], cwd=work_dir)
+    check_call(['git', 'add', work_dir])
 
 def generate(args, selections, config):
     workspace = args.workspace[0]
     dep_dir = workspace/'.dependencies'
     os.makedirs(dep_dir)
+    os.chdir(workspace)
+    check_call(['git', 'init'])
+    # open(dep_dir/'README','w').write('these are dependencies\n')
+    # check_call(['git', 'add', '.dependencies'])
+    # check_call(['git', 'commit', '-m', 'x'])
 
     for uri,sel in selections.selections.items():
+        print '####', uri
         feed = config.iface_cache.get_feed(uri)
         if feed.implementations.get(sel.id):
             git_clone_feed(
@@ -88,6 +108,8 @@ def generate(args, selections, config):
                 , workspace if uri in args.feed else dep_dir
                 , sel.id
                 , config)
+
+    check_call(['git', 'commit', '-m', 'initial workspace setup'])
             
 
 def run(args):
