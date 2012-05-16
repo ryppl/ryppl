@@ -3,7 +3,7 @@
 <!-- Software License, Version 1.0. (See accompanying -->
 <!-- file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt) -->
 <?xml-stylesheet type='text/xsl' href='interface.xsl'?>
-<interface uri='http://ryppl.github.com/feeds/ryppl/ryppl.xml' 
+<interface uri='https://raw.github.com/ryppl/feeds/gh-pages/ryppl/ryppl.xml' 
            xmlns='http://zero-install.sourceforge.net/2004/injector/interface'
            xmlns:dc='http://purl.org/dc/elements/1.1/'>
   <name>ryppl</name>
@@ -19,7 +19,7 @@ intend to extend it to support multiple user-level commands.
   <category>Building</category>
   <homepage>http://ryppl.org</homepage>
   <dc:author>Dave Abrahams &lt;dave@boostpro.com&gt;</dc:author>
-  <feed-for interface='http://ryppl.github.com/feeds/ryppl/ryppl.xml'/>
+  <feed-for interface='https://raw.github.com/ryppl/feeds/gh-pages/ryppl/ryppl.xml'/>
 
   <group license="OSI Approved :: Boost Software License 1.0 (BSL-1.0)">
     <implementation id='.' version='0.8-post' stability="testing"/>
@@ -27,7 +27,7 @@ intend to extend it to support multiple user-level commands.
       <runner interface="http://repo.roscidus.com/python/python">
         <version before="3"/>
       </runner>
-      <requires interface="http://ryppl.github.com/feeds/ryppl/ryppl.xml">
+      <requires interface="https://raw.github.com/ryppl/feeds/gh-pages/ryppl/ryppl.xml">
         <environment insert="cmake/Modules" mode="replace" name="RYPPL_CMAKE_MODULE_PATH"/>
       </requires>
     </command>

@@ -46,7 +46,7 @@ def _msg(*args):
 
 def cmake(args, **kw):
     _msg('cmake-2.8.8+', *args)
-    _zeroinstall.launch(['--not-before=2.8.8', 'http://ryppl.github.com/feeds/cmake.xml'] + args, **kw)
+    _zeroinstall.launch(['--not-before=2.8.8', 'https://raw.github.com/ryppl/feeds/gh-pages/cmake.xml'] + args, **kw)
 
 def run(args):
     if args.overlay or args.subdirectory:
