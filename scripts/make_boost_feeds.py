@@ -41,7 +41,7 @@ def get_brand_name(cmake_name):
     prefix,base = split_package_prefix(cmake_name)
     return prefix + '.' + base if prefix else base
 
-feed_uri_base = 'http://ryppl.github.com/feeds/'
+feed_uri_base = 'https://raw.github.com/ryppl/feeds/gh-pages/'
 ryppl_feed_uri_base = feed_uri_base+'ryppl/'
 boost_feed_uri_base = feed_uri_base+'boost/'
 
@@ -269,7 +269,7 @@ class GenerateBoost(object):
                     })[
                 _.name['%s (%s)' % (self.brand_name, self._human_component[component])]
               , boost_icon
-              , xmlns.ryppl.repository(
+              , _('ryppl:vcs-repository')(
                     type="git", href='http://github.com/boost-lib/%s.git' % self.repo)
               ]
 
@@ -284,10 +284,16 @@ class GenerateBoost(object):
             archive_uri = 'http://nodeload.github.com/boost-lib/' + self.repo + '/zipball/' + git_revision
             zipball = Archive(archive_uri, self.repo, git_revision)
 
-            return self._implementation(arch) [
-                _.archive(extract=zipball.subdir, href=archive_uri, size=zipball.size, type='application/zip')
+            impl = self._implementation(arch) [
+                _.archive(
+                    extract=zipball.subdir
+                    , href=archive_uri
+                    , size=zipball.size
+                    , type='application/zip')
               , _.manifest_digest(sha1new=zipball.digest)
             ]
+            impl.element.attrib['ryppl:vcs-revision']=git_revision
+            return impl
 
         def _write_src_feed(self):
             self_loop = set([self.cmake_name])
