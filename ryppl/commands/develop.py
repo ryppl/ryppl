@@ -99,7 +99,7 @@ def run(args):
     # specified.  NOTE: You can raise this value, but lower values
     # will be ignored unless you also monkeypatch
     # zeroinstall.injector.iface_cache.FAILED_CHECK_DELAY
-    config.freshness = 60*60
+    config.freshness = 60*60*24*7
     
     selections = solve(args, config)
     generate(args, selections, config)
