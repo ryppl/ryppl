@@ -23,7 +23,7 @@ intend to extend it to support multiple user-level commands.
 
   <group license="OSI Approved :: Boost Software License 1.0 (BSL-1.0)">
     <implementation id='.' version='0.8-post' stability="testing"/>
-    <command name="run" path="bin/ryppl">
+    <command name="run" path="ryppl/main.py">
       <runner interface="http://repo.roscidus.com/python/python">
         <version before="3"/>
       </runner>
