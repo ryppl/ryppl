@@ -4,6 +4,7 @@
 # accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt
 
+import sys_path_setup
 import glob, sys
 from subprocess import check_output, check_call, Popen, PIPE
 from xml.etree.cElementTree import ElementTree, Element
