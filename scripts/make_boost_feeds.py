@@ -211,14 +211,10 @@ class GenerateBoost(object):
                 , _.command(name='compile') [
                     _.runner(interface=ryppl_feed_uri('ryppl')) [
                         _.arg[ '0install-cmake' ] 
-                      , _.arg[ '--overlay=${BOOST_CMAKELISTS}' ] 
                         , _.arg[ '--build-type=Debug' ] if component == 'dbg' else None
                         , [_.arg[ c ] for c in self.components]
                         ]
 
-                    , _.requires(interface=boost_feed_uri('CMakeLists'))[
-                        _.environment(insert=self.repo, mode='replace', name='BOOST_CMAKELISTS')
-                        ]
                     , self._dev_requirements(self.build_dependencies)
                     , self.implementation_template(component)
                     ]
@@ -336,7 +332,7 @@ class GenerateBoost(object):
     def _implementation(self, arch):
         return _.implementation(
             arch=arch, id=make_uuid(), released=date.today().isoformat(), 
-            stability='testing', version=self.version)
+            stability='developer', version=self.version)
 
     def _write_cluster_feed(self, cluster):
         feed_name = self._cluster_feed_name(cluster)
@@ -361,7 +357,6 @@ class GenerateBoost(object):
                     _.runner(interface=ryppl_feed_uri('ryppl')) 
                     [
                         _.arg[ '0install-cmake' ]
-                      , _.arg[ '--overlay=${BOOST_CMAKELISTS}' ] 
 
                         # , _.arg[ '--build-type=Debug' ] if component == 'dbg' else []
                         
@@ -381,10 +376,6 @@ class GenerateBoost(object):
                             _.environment(insert='.', mode='replace', name=c+'_SRCDIR')
                             ]
                         for d,c in subdirs.items()]
-
-                    , _.requires(interface=boost_feed_uri('CMakeLists'))[
-                        _.environment(insert='.', mode='replace', name='BOOST_CMAKELISTS')
-                        ]
 
                     , self._dev_requirements(
                             dep for x in cluster for dep in self._build_dependencies(x)

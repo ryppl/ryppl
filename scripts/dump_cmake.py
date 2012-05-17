@@ -5,6 +5,7 @@
 # accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt
 
+import sys_path_setup
 import os
 import sys
 import shutil
