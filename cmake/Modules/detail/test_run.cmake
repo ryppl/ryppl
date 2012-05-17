@@ -21,6 +21,7 @@ foreach(cmd ${COMMANDS})
   separate_arguments(command)
   execute_process(COMMAND ${command}
     RESULT_VARIABLE result
+    OUTPUT_QUIET ERROR_QUIET # TODO: write to file
     )
 
   if((fail AND result EQUAL 0) OR (NOT fail AND NOT result EQUAL 0))
