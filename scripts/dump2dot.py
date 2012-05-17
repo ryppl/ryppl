@@ -66,15 +66,15 @@ def run(dump_dir=None):
             if t in direct_graph[s]:
                 return ['style=bold']
             elif t in t_redux[s]:
-                return ['style=dashed','arrowhead=open','color=blue']
+                return ['style=dashed','color=blue']
             else:
-                return ['style=dashed','color=lightgray']
+                return ['style=dashed','color=gray']
 
     if '--all' in sys.argv[1:]:
         # full_graph = dict((v, direct_graph[v] | t_redux[v]) for v in g)
         full_graph = to_mutable_graph(g, vertex_filter=V.__contains__)
-        # show_digraph(full_graph, formatter=Format(), ranksep=0.5, nodesep=0.05, splines='true', layout='dot')
-        show_digraph(full_graph, formatter=Format(), layout='neato', overlap='false', ordering='out', nodesep=0.05, splines='true')
+        show_digraph(full_graph, formatter=Format(), ranksep=0.5, nodesep=0.05, splines='true', layout='dot')
+        # show_digraph(full_graph, formatter=Format(), layout='neato', overlap='false', ordering='out', nodesep=0.05, splines='true')
     else:
         full_graph = to_mutable_graph(g, vertex_filter=V.__contains__)
         show_digraph(full_graph, formatter=Format(), ranksep=0.5, nodesep=0.05, splines='true', layout='dot')
