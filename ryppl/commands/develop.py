@@ -141,9 +141,9 @@ def run(args):
     os.environ['DISPLAY']=''
 
     config = zeroinstall.injector.config.load_config()
-    # Only download new feed information every hour unless otherwise
-    # specified.  NOTE: You can raise this value, but lower values
-    # will be ignored unless you also monkeypatch
+    # Only download new feed information every week unless otherwise
+    # specified.  NOTE: Values lower than one hour will be ignored
+    # unless you also monkeypatch
     # zeroinstall.injector.iface_cache.FAILED_CHECK_DELAY
     config.freshness = 60*60*24*7
     
