@@ -1,5 +1,6 @@
 # ryppl_export([TARGETS [targets...] ]
 #              [DEPENDS [packages...] ]
+#              [RECOMMENDS [packages...] ]
 #              [INCLUDE_DIRECTORIES [dirs...] ]
 #              [DEFINITIONS [compile_flags...] ]
 #              [CODE [lines...] ]
@@ -58,6 +59,7 @@ function(ryppl_export)
     CODE
     DEFINITIONS
     DEPENDS
+    RECOMMENDS
     INCLUDE_DIRECTORIES
     TARGETS
     )
