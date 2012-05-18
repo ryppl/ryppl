@@ -142,7 +142,7 @@ set(RYPPL_INITIAL_PASS TRUE CACHE BOOL "")
                 , sel.id
                 , config)
 
-            if submodule:
+            if submodule and os.path.isfile(Path(submodule)/'CMakeLists.txt'):
                 (top_cmakelists_txt if requested else dep_cmakelists_txt).write(
                     'add_subdirectory(%s)\n' % submodule)
 
