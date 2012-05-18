@@ -95,14 +95,14 @@ cmake_minimum_required(VERSION 2.8.8 FATAL_ERROR)
 '''
 
 push_disable_tests_docs_examples = '''
-foreach(name IN TEST DOC EXAMPLE)
+foreach(name TEST DOC EXAMPLE)
   set_property(DIRECTORY PROPERTY RYPPL_DISABLE_${name}S ${RYPPL_DISABLE_${name}S})
   set(RYPPL_DISABLE_${name}S true)
 endforeach()
 '''
 
 pop_disable_tests_docs_examples = '''
-foreach(name IN TEST DOC EXAMPLE)
+foreach(name TEST DOC EXAMPLE)
   get_property(RYPPL_DISABLE_${name}S DIRECTORY PROPERTY RYPPL_DISABLE_${name}S)
 endforeach()
 '''
@@ -114,9 +114,17 @@ def generate(args, selections, config):
     os.chdir(workspace)
     check_call(['git', 'init'])
 
-    cmakelists = [ open(d/'CMakeLists.txt','w') for d in (dependency_subdir, curdir) ]
-    for f in cmakelists: f.write(cmakelists_head)
-    cmakelists[0].write(push_disable_tests_docs_examples)
+    top_cmakelists_txt = open(curdir/'CMakeLists.txt','w')
+    dep_cmakelists_txt = open(dependency_subdir/'CMakeLists.txt','w')
+
+    for f in (top_cmakelists_txt, dep_cmakelists_txt): 
+        f.write(cmakelists_head)
+    
+    top_cmakelists_txt.write('''
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/.dependencies/ryppl/cmake/Modules")
+set(RYPPL_INITIAL_PASS TRUE CACHE BOOL "")
+''')
+    dep_cmakelists_txt.write(push_disable_tests_docs_examples)
 
     for uri,sel in selections.selections.items():
 
@@ -127,7 +135,6 @@ def generate(args, selections, config):
         parent_dir = curdir if requested else dependency_subdir
 
         if feed.implementations.get(sel.id):
-
             submodule = git_add_feed_submodule(
                 feed
                 , sel.attrs['version']
@@ -136,15 +143,23 @@ def generate(args, selections, config):
                 , config)
 
             if submodule:
-                cmakelists[requested].write(
+                (top_cmakelists_txt if requested else dep_cmakelists_txt).write(
                     'add_subdirectory(%s)\n' % submodule)
 
-    cmakelists[0].write(pop_disable_tests_docs_examples)
-    cmakelists[1].write('''
+    dep_cmakelists_txt.write(pop_disable_tests_docs_examples)
+    top_cmakelists_txt.write('''
+add_subdirectory(%s)
 
-add_subdirectory(%s)\n''' % dependency_subdir)
+if(RYPPL_INITIAL_PASS)
+  # report an error in order to inhibit the generation step (save time).
+  message(SEND_ERROR
+    "Initial pass successfully completed, now run again!"
+    )
+  set(RYPPL_INITIAL_PASS FALSE CACHE BOOL "" FORCE)
+endif(RYPPL_INITIAL_PASS)
+''' % dependency_subdir)
 
-    for f in cmakelists: 
+    for f in (top_cmakelists_txt, dep_cmakelists_txt): 
         f.close()
         check_call(['git', 'add', f.name])
 
