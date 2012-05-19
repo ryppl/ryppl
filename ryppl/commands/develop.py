@@ -177,6 +177,7 @@ def generate(args, selections, config):
         f.write(cmakelists_head)
     
     top_cmakelists_txt.write('''
+add_definitions(-DBOOST_ALL_NO_LIB)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/%s/ryppl/cmake/Modules")
 set(RYPPL_INITIAL_PASS TRUE CACHE BOOL "")
 ''' % dependency_subdir)
