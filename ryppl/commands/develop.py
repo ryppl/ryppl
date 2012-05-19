@@ -204,7 +204,8 @@ set(RYPPL_INITIAL_PASS TRUE CACHE BOOL "")
                 , tasks
                 , progress
                 )
-            submodules[submodule] = (requested, parent_dir/submodule)
+            if submodule:
+                submodules[submodule] = (requested, parent_dir/submodule)
 
     print
     print 'Waiting for submodules...'
@@ -214,7 +215,7 @@ set(RYPPL_INITIAL_PASS TRUE CACHE BOOL "")
     print 'done.'
 
     for submodule, (requested,dir) in sorted(submodules.items()):
-        if os.path.isfile(dir/submodule/'CMakeLists.txt'):
+        if os.path.isfile(dir/'CMakeLists.txt'):
             (top_cmakelists_txt if requested else dep_cmakelists_txt).write(
                 'add_subdirectory(%s)\n' % submodule)
 
