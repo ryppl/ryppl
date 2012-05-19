@@ -10,6 +10,9 @@ import zeroinstall.injector.requirements
 import zeroinstall.injector.config
 import zeroinstall.injector.driver
 from subprocess import check_call
+from ryppl.support import executable_path
+
+_git = executable_path('git')
 
 def command_line_interface(cli):
     '''Set up a project workspace for the given feeds'''
@@ -81,12 +84,12 @@ def git_add_feed_submodule(feed, tree_ish, where, id, config):
     repo = repos[0]
     submodule_name = repo.attrs['href'].rsplit('/',1)[-1].rsplit('.',1)[0]
     work_dir = where/submodule_name
-    check_call(['git', 'submodule', 'add', '-f', repo.attrs['href'], 
+    check_call([_git, 'submodule', 'add', '-f', repo.attrs['href'], 
                 work_dir])
     implementation = feed.implementations[id]
     tree_ish = implementation.metadata['http://ryppl.org/2012 vcs-revision']
-    check_call(['git', 'checkout', '-q', tree_ish], cwd=work_dir)
-    check_call(['git', 'add', work_dir])
+    check_call([_git, 'checkout', '-q', tree_ish], cwd=work_dir)
+    check_call([_git, 'add', work_dir])
 
     return submodule_name
 
@@ -112,7 +115,7 @@ def generate(args, selections, config):
     dependency_subdir = Path('.dependencies')
     os.makedirs(workspace/dependency_subdir)
     os.chdir(workspace)
-    check_call(['git', 'init'])
+    check_call([_git, 'init'])
 
     top_cmakelists_txt = open(curdir/'CMakeLists.txt','w')
     dep_cmakelists_txt = open(dependency_subdir/'CMakeLists.txt','w')
@@ -161,9 +164,9 @@ endif(RYPPL_INITIAL_PASS)
 
     for f in (top_cmakelists_txt, dep_cmakelists_txt): 
         f.close()
-        check_call(['git', 'add', f.name])
+        check_call([_git, 'add', f.name])
 
-    check_call(['git', 'commit', '-m', 'initial workspace setup'])
+    check_call([_git, 'commit', '-m', 'initial workspace setup'])
             
 
 def run(args):
