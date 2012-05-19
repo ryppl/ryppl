@@ -124,11 +124,19 @@ def git_add_feed_submodule(feed, tree_ish, where, id, config):
     repo = repos[0]
     submodule_name = repo.attrs['href'].rsplit('/',1)[-1].rsplit('.',1)[0]
     work_dir = where/submodule_name
+    os.makedirs(work_dir)
+    check_call([_git, 'init'], cwd=work_dir)
     check_call([_git, 'submodule', 'add', '-f', repo.attrs['href'], 
                 work_dir])
+
+    check_call([_git, 'remote', 'add', 'origin', repo.attrs['href']]
+               , cwd=work_dir)
+
     implementation = feed.implementations[id]
     tree_ish = implementation.metadata['http://ryppl.org/2012 vcs-revision']
+    check_call([_git, 'fetch', '-q', 'origin'], cwd=work_dir)
     check_call([_git, 'checkout', '-q', tree_ish], cwd=work_dir)
+
     check_call([_git, 'add', work_dir])
 
     return submodule_name
