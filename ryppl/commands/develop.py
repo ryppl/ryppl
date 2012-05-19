@@ -132,7 +132,7 @@ set(RYPPL_INITIAL_PASS TRUE CACHE BOOL "")
 
         feed = config.iface_cache.get_feed(uri)
         requested = uri in args.feed
-        parent_dir = curdir if requested else dependency_subdir
+        parent_dir = Path(curdir if requested else dependency_subdir)
 
         if feed.implementations.get(sel.id):
             submodule = git_add_feed_submodule(
@@ -142,7 +142,7 @@ set(RYPPL_INITIAL_PASS TRUE CACHE BOOL "")
                 , sel.id
                 , config)
 
-            if submodule and os.path.isfile(Path(submodule)/'CMakeLists.txt'):
+            if submodule and os.path.isfile(parent_dir/submodule/'CMakeLists.txt'):
                 (top_cmakelists_txt if requested else dep_cmakelists_txt).write(
                     'add_subdirectory(%s)\n' % submodule)
 
