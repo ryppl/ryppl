@@ -14,7 +14,7 @@ def existing_directory(dirname):
 def creatable_path(path):
     if os.path.exists(path):
         raise ArgumentTypeError('%r already exists' % path)
-    if not os.path.exists(os.path.dirname(path)):
+    if not os.path.exists(os.path.dirname(os.path.abspath(path))):
         raise ArgumentTypeError('Parent directory of %r missing' % path)
     return Path(path)
 
