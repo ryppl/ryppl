@@ -6,12 +6,15 @@
 import argparse
 import commands
 import sys
+import logging
 from commands import *
 
 def run():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(help='sub-commands')
-    parser.add_argument('--verbose', '-v', action='store_true')
+    verbosity = parser.add_mutually_exclusive_group()
+    verbosity.add_argument('--verbose', '-v', action='append_const', const=1)
+    verbosity.add_argument('--quiet', '-q', action='append_const', const=1)
 
     for module_name in commands.__all__:
         cmd_module = getattr(commands, module_name)
@@ -24,6 +27,14 @@ def run():
         subparser.set_defaults(runner=cmd_module.run)
         cmd_module.command_line_interface(subparser)
 
-    parsed_args = parser.parse_args(sys.argv[1:])
-    parsed_args.runner(parsed_args)
+    args = parser.parse_args(sys.argv[1:])
+
+    log_level = logging.WARN
+    if args.quiet:
+        log_level += 10*len(args.quiet)
+    if args.verbose:
+        log_level -= 10*len(args.verbose)
+    logging.getLogger().setLevel(log_level)
+
+    args.runner(args)
     

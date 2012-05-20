@@ -3,9 +3,10 @@
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 import sys
 from ryppl.support import _argparse
-from ryppl.support import _zeroinstall
+from ryppl.support.cmake import cmake
 from os import environ as env
 import os
+from logging import info
 from multiprocessing import cpu_count
 
 def command_line_interface(cli):
@@ -36,22 +37,10 @@ def command_line_interface(cli):
 been added with --add-subdirectory, each component should be
 prefixed by its subdirectory and a slash, e.g. "regex/dev".''')
 
-
-def _msg(*args):
-    print '0install-cmake:',
-    for x in args:
-        print x,
-    print
-    sys.stdout.flush()
-
-def cmake(args, **kw):
-    _msg('cmake-2.8.8+', *args)
-    _zeroinstall.launch(['--not-before=2.8.8', 'https://raw.github.com/ryppl/feeds/gh-pages/cmake.xml'] + args, **kw)
-
 def run(args):
-    if args.overlay or args.subdirectory:
+    if args.overlay or args.add_subdirectory:
         SRCDIR = os.path.join(os.getcwd(),'ryppl-composite-src')
-        _msg('preparing source directory...')
+        info('preparing source directory...')
     else:
         SRCDIR = env['SRCDIR']
 
@@ -70,7 +59,7 @@ def run(args):
 
     build_docs = 'doc' in (x.split('/')[-1] for x in args.components)
 
-    _msg('configuring...')
+    info('configuring...')
     for i in range(2):
         cmake([
             '-DRYPPL_INITIAL_PASS=%d' % (i == 0)
@@ -83,7 +72,7 @@ def run(args):
           , SRCDIR
           ])
 
-    _msg('building...')
+    info('building...')
     build_args = ['--build', '.']
     if build_docs:
         build_args += ['--target', 'documentation']
@@ -93,7 +82,7 @@ def run(args):
     
     for c in args.components:
         subdir_component = c.split('/')
-        _msg('installing %s...' % c)
+        info('installing %s...', c)
         if len(args.components) > 1:
             prefix = os.path.join(DISTDIR, *subdir_component)
         else:
