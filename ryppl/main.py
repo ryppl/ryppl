@@ -11,7 +11,7 @@ from commands import *
 def run():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(help='sub-commands')
-    parser.add_argument('--verbose', action='store_true')
+    parser.add_argument('--verbose', '-v', action='store_true')
 
     for module_name in commands.__all__:
         cmd_module = getattr(commands, module_name)
