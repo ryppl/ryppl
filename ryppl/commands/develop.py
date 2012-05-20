@@ -205,11 +205,11 @@ def run(args):
     config = zeroinstall.injector.config.load_config()
     config._iface_cache = SloppyCache()
 
-    # Only download new feed information every week unless otherwise
+    # Only download new feed information every day unless otherwise
     # specified.  NOTE: Values lower than one hour will be ignored
     # unless you also monkeypatch
     # zeroinstall.injector.iface_cache.FAILED_CHECK_DELAY
-    config.freshness = 60*60*24*7
+    config.freshness = 60*60*24
     
     selections = solve(args, config)
     generate(args, selections, config)
