@@ -57,6 +57,9 @@ def solve(args, config):
                 not feed.startswith('distribution:') and
                 config.iface_cache.is_stale(feed, config.freshness))
 
+        if refresh: 
+            print 'Fetching stale/missing 0install feeds'
+
         blocker = driver.solve_with_downloads(refresh)
         if blocker:
             zeroinstall.support.tasks.wait_for_blocker(blocker)
@@ -123,12 +126,11 @@ foreach(name TEST DOC EXAMPLE)
 endforeach()
 '''
 
-def generate(args, selections, config):
-    workspace = args.workspace[0]
+def prepare_src(src, args, selections, config):
+    print 'Creating src/ directory...'
     dependency_subdir = Path('.dependencies')
-    os.makedirs(workspace/dependency_subdir)
-    os.chdir(workspace)
-    print 'Setting up project workspace...'
+    os.makedirs(src/dependency_subdir)
+    os.chdir(src)
     check_call([_git, 'init', '-q'])
 
     top_cmakelists_txt = open(curdir/'CMakeLists.txt','w')
@@ -196,7 +198,9 @@ endif(RYPPL_INITIAL_PASS)
 
     check_call([_git, 'add', '-A'])
     check_call([_git, 'commit', '-q', '-m', 'initial workspace setup'])
-            
+
+def prepare_build(build_dir):
+    os.makedirs(build_dir)
 
 def run(args):
     # Suppress all 0install GUI elements
@@ -212,5 +216,8 @@ def run(args):
     config.freshness = 60*60*24
     
     selections = solve(args, config)
-    generate(args, selections, config)
 
+    workspace = Path(args.workspace[0])
+
+    prepare_src(workspace/'src', args, selections, config)
+    prepare_build(workspace/'build')
