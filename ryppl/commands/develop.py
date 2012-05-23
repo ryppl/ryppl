@@ -13,6 +13,8 @@ from subprocess import check_call,PIPE
 from ryppl.support import executable_path
 from ryppl.support.threadpool import ThreadPool
 from ryppl.support._zeroinstall.sloppy_cache import SloppyCache
+from ryppl.support import cmake
+import logging
 
 def command_line_interface(cli):
     '''Set up a project workspace for the given feeds'''
@@ -202,6 +204,28 @@ endif(RYPPL_INITIAL_PASS)
 def prepare_build(build_dir):
     os.makedirs(build_dir)
 
+    # Have the user select a cmake generator
+    generators = cmake.generators()
+    n = 0
+    if logging.getLogger().getEffectiveLevel() < logging.ERROR \
+    and (not hasattr(sys.stdin, 'isatty') or sys.stdin.isatty()):
+        print 'Please select a build system:'
+        for i,g in enumerate(generators):
+            print '[%d] %s' % (i, g)
+
+        while True:
+            sys.stdout.write('Build system [0-%d]:' % (len(generators) - 1))
+            sys.stdout.flush()
+            l = sys.stdin.readline()
+            try: n = int(l.strip())
+            except: continue
+            if n < 0 or n >= len(generators): continue
+            break
+
+        cmake.configure_for_circular_dependencies(
+            '-G', generators[n], '../src'
+            , cwd=build_dir)
+
 def run(args):
     # Suppress all 0install GUI elements
     os.environ['DISPLAY']=''
@@ -217,7 +241,7 @@ def run(args):
     
     selections = solve(args, config)
 
-    workspace = Path(args.workspace[0])
+    workspace = Path(args.workspace[0]).abspath
 
     prepare_src(workspace/'src', args, selections, config)
     prepare_build(workspace/'build')
