@@ -37,13 +37,9 @@ def configure_for_circular_dependencies(*args, **kw):
 def generators():
     help = subprocess.check_output(command + ('--help',))
 
-    generator_block = help.split('''
-Generators
-
-The following generators are available on this platform:
-''')[1]
+    generator_block = help.split('The following generators are available on this platform:')[1]
     ret = []
-    for line in generator_block.split('\n'):
+    for line in generator_block.replace('\r\n','\n').split('\n'):
         g = line.split('=')[0].strip()
         if g:
             ret.append(g)
