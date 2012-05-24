@@ -18,7 +18,6 @@ setup(
                    'Programming Language :: Python'],
     packages = ['ryppl', 'ryppl.commands'],
     entry_points=dict(console_scripts=['ryppl = ryppl.main:run']),
-    scripts = ['bin/ryppl'],
 
     long_description = open('README.rst').read(),
 )
