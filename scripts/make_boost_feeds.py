@@ -40,7 +40,7 @@ def get_brand_name(cmake_name):
     prefix,base = split_package_prefix(cmake_name)
     return prefix + '.' + base if prefix else base
 
-feed_uri_base = 'https://raw.github.com/ryppl/feeds/gh-pages/'
+feed_uri_base = 'http://ryppl.github.com/feeds/'
 ryppl_feed_uri_base = feed_uri_base+'ryppl/'
 boost_feed_uri_base = feed_uri_base+'boost/'
 
