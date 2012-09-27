@@ -20,11 +20,11 @@ def configure_for_circular_dependencies(*args, **kw):
         stderr=subprocess.PIPE, 
         **kw)
     stderr = p.communicate()[1]
-    if p.returncode == 0 or 'Initial pass successfully completed, now run again!' not in stderr:
+    if p.wait() == 0 or 'Initial pass successfully completed, now run again!' not in stderr:
         raise subprocess.CalledProcessError(
             p.returncode, cmd,
             output=stderr if p.returncode  else
-            'Expected to exit with an error after initial configuration pass')
+            'Expected to exit with an error after initial configuration pass\n' + stderr)
 
     info('CMake second pass')
     cmake(args, **kw)
