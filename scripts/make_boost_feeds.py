@@ -454,7 +454,7 @@ class GenerateBoost(object):
         # Make sure there are no modularity violations
         self._find_dependency_cycles()
         
-        self.version = '1.49-post-' + datetime.utcnow().strftime("%Y.%m.%d.%H%M")
+        self.version = '1.51-post-' + datetime.utcnow().strftime("%Y.%m.%d.%H%M")
         print '### new version =', self.version
 
         print '### reading Boost library metadata...'
