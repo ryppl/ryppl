@@ -61,7 +61,8 @@ def run(args):
     info('configuring...')
     for i in range(2):
         cmake([
-            '-DRYPPL_INITIAL_PASS=%d' % (i == 0)
+            '-G', 'Ninja'
+          , '-DRYPPL_INITIAL_PASS=%d' % (i == 0)
           , '-DCMAKE_MODULE_PATH=' + env['RYPPL_CMAKE_MODULE_PATH']
           , '-DCMAKE_BUILD_TYPE='+ args.build_type
           , '-DRYPPL_DISABLE_TESTS=1'
