@@ -54,8 +54,7 @@ def run(args):
         with open(os.path.join(SRCDIR,'CMakeLists.txt'), 'w') as root_cmakelists_txt:
             root_cmakelists_txt.write('cmake_minimum_required(VERSION 2.8.8 FATAL_ERROR)\n')
             for src,dst in args.add_subdirectory:
-                cmake(['-E', 'copy_directory', src, os.path.join(SRCDIR, dst)])
-                root_cmakelists_txt.write('add_subdirectory(%s)\n' % dst)
+                root_cmakelists_txt.write('add_subdirectory(%s %s)\n' % (src,dst))
 
     build_docs = 'doc' in (x.split('/')[-1] for x in args.components)
 
