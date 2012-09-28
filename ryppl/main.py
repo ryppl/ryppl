@@ -38,3 +38,5 @@ def run():
 
     args.runner(args)
     
+if __name__ == '__main__':
+    run()
