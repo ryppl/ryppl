@@ -285,7 +285,7 @@ class GenerateBoost(object):
                     , href=archive_uri
                     , size=zipball.size
                     , type='application/zip')
-              , _.manifest_digest(sha256=zipball.digest)
+              , _.manifest_digest(sha256new=zipball.digest)
             ]
             impl.element.attrib['ryppl:vcs-revision']=git_revision
             return impl
