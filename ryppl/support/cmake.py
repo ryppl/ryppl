@@ -8,7 +8,7 @@ import os
 
 cmake_2_8_8_plus = (
     '--not-before=2.8.8'
-    , 'https://raw.github.com/ryppl/feeds/gh-pages/cmake.xml')
+    , 'http://ryppl.github.com/feeds/cmake.xml')
 
 command = _zeroinstall.launch_command + cmake_2_8_8_plus
 
