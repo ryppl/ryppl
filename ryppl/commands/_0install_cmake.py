@@ -41,13 +41,13 @@ def run(args):
     if args.overlay or args.add_subdirectory:
         SRCDIR = os.path.join(os.getcwd(),'ryppl-composite-src')
         info('preparing source directory...')
+        cmake(['-E', 'copy_directory', env['SRCDIR'], SRCDIR])
     else:
         SRCDIR = env['SRCDIR']
 
     DISTDIR = env['DISTDIR']
 
     if args.overlay:
-        cmake(['-E', 'copy_directory', env['SRCDIR'], SRCDIR])
         cmake(['-E', 'copy_directory', args.overlay, SRCDIR])
 
     if args.add_subdirectory:
