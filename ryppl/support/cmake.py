@@ -14,7 +14,7 @@ command = _zeroinstall.launch_command + cmake_2_8_8_plus
 
 def cmake(args, **kw):
     info('cmake-2.8.8+ %s', args)
-    return _zeroinstall.launch(cmake_2_8_8_plus+args, **kw)
+    return _zeroinstall.launch(cmake_2_8_8_plus+tuple(args), **kw)
 
 def configure_for_circular_dependencies(*args, **kw):
     info('CMake first pass')
