@@ -24,11 +24,18 @@ intend to extend it to support multiple user-level commands.
     <implementation id='.' version='0.8-post' stability="testing"/>
     <command name="run" path="ryppl/main.py">
       <runner interface="http://repo.roscidus.com/python/python">
-        <version before="3"/>
+        <version before="3" not-before="2.6"/>
       </runner>
       <requires interface="http://ryppl.github.com/feeds/ryppl/ryppl.xml">
         <environment insert="cmake/Modules" mode="replace" name="RYPPL_CMAKE_MODULE_PATH"/>
         <environment insert="." mode="replace" name="PYTHONPATH"/>
+      </requires>
+      <requires interface="http://gfxmonk.net/dist/0install/argparse.xml">
+        <environment insert="." mode="append" name="PYTHONPATH"/>
+      </requires>
+      <requires interface="http://0install.net/2007/interfaces/ZeroInstall.xml">
+        <version not-before="1.8"/>
+        <environment insert="." mode="prepend" name="PYTHONPATH"/>
       </requires>
       <requires interface="http://ryppl.github.com/feeds/ninja.xml">
         <executable-in-path name="ninja"/>
