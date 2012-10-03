@@ -39,6 +39,7 @@ intend to extend it to support multiple user-level commands.
       </requires>
       <requires interface="http://ryppl.github.com/feeds/ninja.xml">
         <executable-in-path name="ninja"/>
+        <environment insert="." mode="prepend" name="PATH"/>
       </requires>
     </command>
   </group>
