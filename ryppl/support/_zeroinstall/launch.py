@@ -3,14 +3,21 @@
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 from zeroinstall.injector import cli
 from subprocess import check_call
-import sys
+import sys, os
 
-command = (
-    sys.executable
-    , '-c', 'import sys\n'
-    'from zeroinstall.injector import cli\n'
-    'cli.main(sys.argv[1:])\n'
-)
+if os.name == 'nt':
+    # On windows, always launch using the executable in the path; we
+    # need its ability to verify manifests, etc.
+    command = ( '0launch', )
+else:
+    # Elsewhere, launch by invoking *this* python and using the
+    # zeroinstall in the PYTHONPATH
+    command = (
+        sys.executable
+        , '-c', 'import sys\n'
+        'from zeroinstall.injector import cli\n'
+        'cli.main(sys.argv[1:])\n'
+    )
 
 def launch(args, **kw):
     '''Effectively calls 0launch on with the given command-line
@@ -21,12 +28,14 @@ def launch(args, **kw):
 
     if kw.pop('noreturn', None):
         assert len(kw) == 0
-        # The caller has told us he doesn't need to regain control, so
-        # launch the command directly.
-        cli.main(args)
-    else:
-        # Run 0launch in a subprocess so we get control back
-        # afterwards.  Otherwise the 0launch process *replaces* itself
-        # with the process being launched (on posix).
-        check_call(command + tuple(args), **kw)
+        if os.name != 'nt':
+            # The caller has told us he doesn't need to regain control, so
+            # launch the command directly.
+            cli.main(args)
+            return
+
+    # Run 0launch in a subprocess so we get control back
+    # afterwards.  Otherwise the 0launch process *replaces* itself
+    # with the process being launched (on posix).
+    check_call(command + tuple(args), **kw)
 
