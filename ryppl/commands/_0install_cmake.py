@@ -63,7 +63,7 @@ def run(args):
         cmake([
             '-G', 'Ninja'
           , '-DRYPPL_INITIAL_PASS=%d' % (i == 0)
-          , '-DCMAKE_MODULE_PATH=' + env['RYPPL_CMAKE_MODULE_PATH']
+          , '-DCMAKE_MODULE_PATH=' + env['RYPPL_CMAKE_MODULE_PATH'].replace('\\','/')
           , '-DCMAKE_BUILD_TYPE='+ args.build_type
           , '-DRYPPL_DISABLE_TESTS=1'
           , '-DRYPPL_DISABLE_EXAMPLES=1'
