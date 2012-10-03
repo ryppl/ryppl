@@ -104,7 +104,7 @@ class GenerateBoost(object):
             extract='empty', href=feed_uri_base+'empty.zip'
           , size=162, type="application/zip"
         ), 
-        _.manifest_digest(sha1new='da39a3ee5e6b4b0d3255bfef95601890afd80709')
+        _.manifest_digest(sha256new='4OYMIQUY7QOBJGX36TEJS35ZEQT24QPEMSNZGTFESWMRW6CSXBKQ')
         )
 
 
