@@ -38,7 +38,7 @@ intend to extend it to support multiple user-level commands.
         <environment insert="." mode="prepend" name="PYTHONPATH"/>
       </requires>
       <requires interface="http://ryppl.github.com/feeds/ninja.xml">
-        <environment insert="." mode="prepend" name="PATH"/>
+        <executable-in-path name="ninja"/>
       </requires>
     </command>
   </group>
