@@ -1,11 +1,15 @@
-##########################################################################
-# Copyright (C) 2008 Douglas Gregor <doug.gregor@gmail.com>              #
-# Copyright (C) 2011-2012 Daniel Pfeifer <daniel@pfeifer-mail.de>        #
-#                                                                        #
-# Distributed under the Boost Software License, Version 1.0.             #
-# See accompanying file LICENSE_1_0.txt or copy at                       #
-#   http://www.boost.org/LICENSE_1_0.txt                                 #
-##########################################################################
+# Adds documentation for the current library or tool project
+#
+#   ryppl_documentation(<docbook-file>)
+
+#=============================================================================
+# Copyright (C) 2008 Douglas Gregor <doug.gregor@gmail.com>
+# Copyright (C) 2011-2012 Daniel Pfeifer <daniel@pfeifer-mail.de>
+#
+# Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE_1_0.txt or copy at
+#   http://www.boost.org/LICENSE_1_0.txt
+#=============================================================================
 
 if(NOT TARGET documentation)
   add_custom_target(documentation)
@@ -29,10 +33,6 @@ get_filename_component(Ryppl_RESOURCE_PATH
 
 #include(CMakeParseArguments)
 
-# Adds documentation for the current library or tool project
-#
-#   ryppl_documentation(<docbook-file>)
-#
 function(ryppl_documentation input)
   if(RYPPL_DISABLE_DOCS)
     return()

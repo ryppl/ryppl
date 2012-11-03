@@ -1,10 +1,26 @@
-################################################################################
-# Copyright (C) 2012 Dave Abrahams <dave@boostpro.com>                         #
-#                                                                              #
-# Distributed under the Boost Software License, Version 1.0.                   #
-# See accompanying file LICENSE_1_0.txt or copy at                             #
-#   http://www.boost.org/LICENSE_1_0.txt                                       #
-################################################################################
+# Convenient wrappers for find_package.
+#
+#    ryppl_find_package(...)
+#    ryppl_find_and_use_package(...)
+#
+# Both functions take the same arguments as find_package. Please refer to the
+# documentation of find_package for details.
+#
+# ryppl_find_package calls find_package, and additionally remembers the
+# arguments for package dependency tracking.
+#
+# ryppl_find_and_use_package calls ryppl_find_package and adds the
+# <Package>_DEFINITIONS to the current directories definitions and the
+# <Package>_INCLUDE_DIRS to the current directories include directories.
+
+#=============================================================================
+# Copyright (C) 2012 Dave Abrahams <dave@boostpro.com>
+#
+# Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE_1_0.txt or copy at
+#   http://www.boost.org/LICENSE_1_0.txt
+#=============================================================================
+
 if(__RYPPL_FIND_PACKAGE_INCLUDED)
   return()
 endif()

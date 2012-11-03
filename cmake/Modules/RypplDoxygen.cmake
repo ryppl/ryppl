@@ -1,15 +1,4 @@
-##########################################################################
-# Copyright (C) 2008 Douglas Gregor <doug.gregor@gmail.com>              #
-# Copyright (C) 2011 Daniel Pfeifer <daniel@pfeifer-mail.de>             #
-#                                                                        #
-# Distributed under the Boost Software License, Version 1.0.             #
-# See accompanying file LICENSE_1_0.txt or copy at                       #
-#   http://www.boost.org/LICENSE_1_0.txt                                 #
-##########################################################################
-
-find_package(XSLTPROC REQUIRED)
-include(CMakeParseArguments)
-
+# Create a custom command to generate doxygen XML.
 #
 #   ryppl_doxygen(<name> [XML] [TAG]
 #     [DOXYFILE <doxyfile>]
@@ -17,7 +6,19 @@ include(CMakeParseArguments)
 #     [TAGFILES <tagfiles>]
 #     [PARAMETERS <parameters>]
 #     )
+
+#=============================================================================
+# Copyright (C) 2008 Douglas Gregor <doug.gregor@gmail.com>
+# Copyright (C) 2011 Daniel Pfeifer <daniel@pfeifer-mail.de>
 #
+# Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE_1_0.txt or copy at
+#   http://www.boost.org/LICENSE_1_0.txt
+#=============================================================================
+
+find_package(XSLTPROC REQUIRED)
+include(CMakeParseArguments)
+
 function(ryppl_doxygen name)
   cmake_parse_arguments(DOXY
     "XML;TAG" "DOXYFILE" "INPUT;TAGFILES;PARAMETERS" ${ARGN})

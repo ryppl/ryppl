@@ -5,7 +5,7 @@
 #   ryppl_add_example_subdirectory(source_dir [binary_dir] [EXCLUDE_FROM_ALL])
 #
 # Tests, documentation, and examples may have additional build dependencies.
-# Ryppl needs a standardized way to disable them explicitely.
+# Ryppl provides a standardized way to disable them explicitely.
 #
 # ryppl_add_test_subdirectory() will call add_subdirectory() unless either
 # RYPPL_DISABLE_TESTS or <project>_DISABLE_TESTS is true.

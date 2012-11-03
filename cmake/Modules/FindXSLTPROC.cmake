@@ -1,10 +1,36 @@
-##########################################################################
-# Copyright (C) 2010-2011 Daniel Pfeifer <daniel@pfeifer-mail.de>        #
-#                                                                        #
-# Distributed under the Boost Software License, Version 1.0.             #
-# See accompanying file LICENSE_1_0.txt or copy at                       #
-#   http://www.boost.org/LICENSE_1_0.txt                                 #
-##########################################################################
+# Find the xsltproc tool.
+#
+#   XSLTPROC_EXECUTABLE - path to the xsltproc executable
+#   XSLTPROC_FOUND      - true if xsltproc was found
+#   XSLTPROC_VERSION    - the version of xsltproc found
+#
+# If xsltproc was found, this module provides the following function:
+#
+#   xsltproc(<output> <stylesheet> <input>
+#     [PARAMETERS param1=value1 param2=value2 ...]
+#     [CATALOG <catalog file>]
+#     [DEPENDS <dependancies>]
+#     )
+#
+# This function builds a custom command that transforms an XML file
+# (input) via the given XSL stylesheet. 
+#
+# The PARAMETERS argument is followed by param=value pairs that set
+# additional parameters to the XSL stylesheet. The parameter names
+# that can be used correspond to the <xsl:param> elements within the
+# stylesheet.
+#
+# Additional dependancies may be passed via the DEPENDS argument.
+# For example, dependancies might refer to other XML files that are
+# included by the input file through XInclude.
+
+#=============================================================================
+# Copyright (C) 2010-2011 Daniel Pfeifer <daniel@pfeifer-mail.de>
+#
+# Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE_1_0.txt or copy at
+#   http://www.boost.org/LICENSE_1_0.txt
+#=============================================================================
 
 find_package(XSLTPROC QUIET NO_MODULE)
 
@@ -43,25 +69,6 @@ endif()
 
 include(CMakeParseArguments)
 
-# Transforms the input XML file by applying the given XSL stylesheet.
-#
-#   xsltproc(<output> <stylesheet> <input>
-#     [PARAMETERS param1=value1 param2=value2 ...]
-#     [CATALOG <catalog file>]
-#     [DEPENDS <dependancies>]
-#     )
-#
-# This function builds a custom command that transforms an XML file
-# (input) via the given XSL stylesheet. 
-#
-# The PARAMETERS argument is followed by param=value pairs that set
-# additional parameters to the XSL stylesheet. The parameter names
-# that can be used correspond to the <xsl:param> elements within the
-# stylesheet.
-#
-# Additional dependancies may be passed via the DEPENDS argument.
-# For example, dependancies might refer to other XML files that are
-# included by the input file through XInclude.
 function(xsltproc)
   cmake_parse_arguments(XSL
     "NONET;XINCLUDE"

@@ -1,3 +1,6 @@
+# Convenience module that includes RypplAddSubdirectory, RypplExport, and
+# RypplFindPackage.
+
 #=============================================================================
 # Copyright (C) 2012 Daniel Pfeifer <daniel@pfeifer-mail.de>
 #

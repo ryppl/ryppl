@@ -1,10 +1,16 @@
-################################################################################
-# Copyright (C) 2010-2011 Daniel Pfeifer <daniel@pfeifer-mail.de>              #
-#                                                                              #
-# Distributed under the Boost Software License, Version 1.0.                   #
-# See accompanying file LICENSE_1_0.txt or copy at                             #
-#   http://www.boost.org/LICENSE_1_0.txt                                       #
-################################################################################
+# The module defines the following variables:
+#
+#   PANDOC_EXECUTABLE - path to the pandoc executable
+#   PANDOC_FOUND      - true if pandoc was found
+#   PANDOC_VERSION    - the version of pandoc found
+
+#=============================================================================
+# Copyright (C) 2010-2011 Daniel Pfeifer <daniel@pfeifer-mail.de>
+#
+# Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE_1_0.txt or copy at
+#   http://www.boost.org/LICENSE_1_0.txt
+#=============================================================================
 
 find_program(PANDOC_EXECUTABLE
   NAMES

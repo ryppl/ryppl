@@ -1,12 +1,18 @@
-##########################################################################
-# Copyright (C) 2011 Daniel Pfeifer <daniel@pfeifer-mail.de>             #
-#                                                                        #
-# Distributed under the Boost Software License, Version 1.0.             #
-# See accompanying file LICENSE_1_0.txt or copy at                       #
-#   http://www.boost.org/LICENSE_1_0.txt                                 #
-##########################################################################
-
 # Find DocBook to LaTeX Publishing (http://dblatex.sourceforge.net/)
+#
+# The module defines the following variables:
+#
+#   DBLATEX_EXECUTABLE - path to the dblatex executable
+#   DBLATEX_FOUND      - true if dblatex was found
+#   DBLATEX_VERSION    - the version of dblatex found
+
+#=============================================================================
+# Copyright (C) 2011 Daniel Pfeifer <daniel@pfeifer-mail.de>
+#
+# Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE_1_0.txt or copy at
+#   http://www.boost.org/LICENSE_1_0.txt
+#=============================================================================
 
 if(DBLATEX_EXECUTABLE)
   return()

@@ -1,10 +1,16 @@
-################################################################################
-# Copyright (C) 2010-2011 Daniel Pfeifer <daniel@pfeifer-mail.de>              #
-#                                                                              #
-# Distributed under the Boost Software License, Version 1.0.                   #
-# See accompanying file LICENSE_1_0.txt or copy at                             #
-#   http://www.boost.org/LICENSE_1_0.txt                                       #
-################################################################################
+# The module defines the following variables:
+#
+#   ASCIIDOC_EXECUTABLE - path to the asciidoc executable
+#   ASCIIDOC_FOUND      - true if asciidoc was found
+#   ASCIIDOC_VERSION    - the version of asciidoc found
+
+#=============================================================================
+# Copyright (C) 2010-2011 Daniel Pfeifer <daniel@pfeifer-mail.de>
+#
+# Distributed under the Boost Software License, Version 1.0.
+# See accompanying file LICENSE_1_0.txt or copy at
+#   http://www.boost.org/LICENSE_1_0.txt
+#=============================================================================
 
 if(ASCIIDOC_EXECUTABLE)
   return()

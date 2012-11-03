@@ -1,16 +1,20 @@
-# ryppl_export([TARGETS [targets...] ]
-#              [DEPENDS [packages...] ]
-#              [RECOMMENDS [packages...] ]
-#              [INCLUDE_DIRECTORIES [dirs...] ]
-#              [DEFINITIONS [compile_flags...] ]
-#              [CODE [lines...] ]
-#              [VERSION version])
+# Export a project to make it usable for other projects.
+#
+#   ryppl_export(
+#     [TARGETS [targets...] ]
+#     [DEPENDS [packages...] ]
+#     [RECOMMENDS [packages...] ]
+#     [INCLUDE_DIRECTORIES [dirs...] ]
+#     [DEFINITIONS [compile_flags...] ]
+#     [CODE [lines...] ]
+#     [VERSION version]
+#     )
 #
 # ryppl_export writes targets declared in the current listfile and
 # their usage requirements into a <packagename>Config.cmake file that
 # can be found and used by CMake's find_package().  It also calls
-# install() to generate installation instructions for -dev, -bin, and
-# -dbg packages, and registers the exported package in the CMake
+# install() to generate installation instructions for dev, bin, and
+# dbg packages, and registers the exported package in the CMake
 # package registry.
 #
 # TARGETS names the CMake targets that are part of the package being
