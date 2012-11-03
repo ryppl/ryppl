@@ -40,7 +40,7 @@ function(ryppl_doxygen name)
 
   foreach(param ${default_parameters} ${DOXY_PARAMETERS})
     file(APPEND ${doxyfile} "${param}\n")
-  endforeach(param)
+  endforeach()
 
   set(output)
   if(DOXY_XML)
@@ -50,27 +50,27 @@ function(ryppl_doxygen name)
       "GENERATE_XML = YES\n"
       "XML_OUTPUT = ${xml_dir}\n"
       )
-  endif(DOXY_XML)
+  endif()
 
   if(DOXY_TAG)
     set(tagfile ${CMAKE_CURRENT_BINARY_DIR}/${name}.tag)
     list(APPEND output ${tagfile})
     file(APPEND ${doxyfile} "GENERATE_TAGFILE = ${tagfile}\n")
     set(${name}_tag ${tagfile} PARENT_SCOPE)
-  endif(DOXY_TAG)
+  endif()
 
   set(tagfiles)
   foreach(file ${DOXY_TAGFILES})
     get_filename_component(file ${file} ABSOLUTE)
     set(tagfiles "${tagfiles} \\\n \"${file}\"")
-  endforeach(file)
+  endforeach()
   file(APPEND ${doxyfile} "TAGFILES = ${tagfiles}\n")
 
   set(input)
   foreach(file ${DOXY_INPUT})
     get_filename_component(file ${file} ABSOLUTE)
     set(input "${input} \\\n \"${file}\"")
-  endforeach(file)
+  endforeach()
   file(APPEND ${doxyfile} "INPUT = ${input}\n")
 
   find_package(Doxygen REQUIRED)
@@ -87,5 +87,5 @@ function(ryppl_doxygen name)
       STYLESHEET "${xml_dir}/combine.xslt"
       )
     set(${name}_xml ${xml_dir}/all.xml PARENT_SCOPE)
-  endif(DOXY_XML)
-endfunction(ryppl_doxygen)
+  endif()
+endfunction()

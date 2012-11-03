@@ -10,7 +10,7 @@
 
 if(DBLATEX_EXECUTABLE)
   return()
-endif(DBLATEX_EXECUTABLE)
+endif()
 
 if(CMAKE_HOST_WIN32)
   find_package(PythonInterp QUIET)
@@ -24,7 +24,7 @@ if(CMAKE_HOST_WIN32)
     set(DBLATEX_EXECUTABLE ${PYTHON_EXECUTABLE} ${dblatex_py}
       CACHE FILEPATH "dblatex executable"
       )
-  endif(PYTHONINTERP_FOUND AND dblatex_py)
+  endif()
   unset(dblatex_py CACHE)
 else()
   find_program(DBLATEX_EXECUTABLE dblatex)
@@ -35,7 +35,7 @@ if(DBLATEX_EXECUTABLE)
     OUTPUT_VARIABLE DBLATEX_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
   string(REGEX REPLACE "^dblatex version (.+)$" "\\1"
     DBLATEX_VERSION "${DBLATEX_VERSION}")
-endif(DBLATEX_EXECUTABLE)
+endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(DBLATEX

@@ -9,7 +9,7 @@
 
 if(NOT TARGET documentation)
   add_custom_target(documentation)
-endif(NOT TARGET documentation)  
+endif()  
 
 if(CMAKE_HOST_WIN32)
   set(dev_null NUL)
@@ -137,5 +137,5 @@ function(ryppl_documentation input)
       FOLDER "${PROJECT_NAME}"
       PROJECT_LABEL "${PROJECT_NAME} (pdf)"
       )
-  endif(DBLATEX_FOUND OR FOPROCESSOR_FOUND)
-endfunction(ryppl_documentation)
+  endif()
+endfunction()

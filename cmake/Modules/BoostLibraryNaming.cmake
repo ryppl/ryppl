@@ -43,29 +43,29 @@ function(boost_library_naming)
   if(WIN32)
     set(tag_toolset "-${BOOST_TOOLSET}")
     set(tag_version "-${boost_version}")
-  else(WIN32)
+  else()
     set(tag_toolset "")
     set(tag_version "")
-  endif(WIN32)
+  endif()
 
   # Add -mt for multi-threaded libraries
   if(BUILD_MULTI_THREADED)
     set(tag_mt "-mt")
-  else(BUILD_MULTI_THREADED)
+  else()
     set(tag_mt "")
-  endif(BUILD_MULTI_THREADED)
+  endif()
 
   # Using the debug version of the runtime library.
   # With Visual C++, this comes automatically with debug
   if(MSVC)
     set(tag_rtdebug "g")
-  else(MSVC)
+  else()
     set(tag_rtdebug "")
-  endif(MSVC)
+  endif()
 
   # CMAKE_<CONFIG>_POSTFIX
   set_target_properties(${ARGN} PROPERTIES
     DEBUG_POSTFIX   "${tag_toolset}${tag_mt}-${tag_rtdebug}d${tag_version}"
     RELEASE_POSTFIX "${tag_toolset}${tag_mt}${tag_version}"
     )
-endfunction(boost_library_naming)
+endfunction()

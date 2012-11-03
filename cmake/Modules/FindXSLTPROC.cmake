@@ -90,7 +90,7 @@ function(xsltproc)
     list(GET name_value 0 name)
     list(GET name_value 1 value)
     file(APPEND ${script} "  --stringparam ${name} ${value}\n")
-  endforeach(param)
+  endforeach()
 
   file(APPEND ${script}
     "  -o \"${XSL_OUTPUT}\" \"${XSL_STYLESHEET}\" \"${XSL_INPUT}\"\n"
@@ -106,4 +106,4 @@ function(xsltproc)
     COMMAND ${CMAKE_COMMAND} -DXSLTPROC=${XSLTPROC_EXECUTABLE} -P ${script}
     DEPENDS ${XSL_STYLESHEET} ${XSL_INPUT} ${XSL_DEPENDS}
     )
-endfunction(xsltproc)
+endfunction()

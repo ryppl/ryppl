@@ -24,7 +24,7 @@ macro(__boost_add_test_compile fail)
   get_directory_property(include_directories INCLUDE_DIRECTORIES)
   foreach(dir ${include_directories})
     list(APPEND FLAGS "-I${dir}")
-  endforeach(dir)
+  endforeach()
 
   string(REGEX REPLACE "<([A-Z_]+)>" "@\\1@" compile
     "${CMAKE_CXX_COMPILE_OBJECT}"
@@ -45,7 +45,7 @@ macro(__boost_add_test_compile fail)
 
   list(APPEND TEST_NAMES ${name})
   list(APPEND TEST_FILES ${output})
-endmacro(__boost_add_test_compile)
+endmacro()
 
 
 macro(__boost_add_test_link link_rule fail)
@@ -80,7 +80,7 @@ macro(__boost_add_test_link link_rule fail)
 
   list(APPEND TEST_NAMES ${name})
   list(APPEND TEST_FILES ${output})
-endmacro(__boost_add_test_link)
+endmacro()
 
 
 macro(__boost_add_test_run driver fail)
@@ -100,7 +100,7 @@ macro(__boost_add_test_run driver fail)
 
   list(APPEND TEST_NAMES ${name})
   list(APPEND TEST_FILES ${output})
-endmacro(__boost_add_test_run)
+endmacro()
 
 
 macro(__boost_add_test_run_deprecated driver fail)
@@ -131,7 +131,7 @@ macro(__boost_add_test_run_deprecated driver fail)
 
   list(APPEND TEST_NAMES ${name})
   list(APPEND TEST_FILES ${output})
-endmacro(__boost_add_test_run_deprecated)
+endmacro()
 
 
 macro(__boost_add_test_python fail)
@@ -163,4 +163,4 @@ macro(__boost_add_test_python fail)
 
   list(APPEND TEST_NAMES ${name})
   list(APPEND TEST_FILES ${output})
-endmacro(__boost_add_test_python)
+endmacro()

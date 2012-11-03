@@ -8,7 +8,7 @@
 
 if(PYTHONPATH)
   set(ENV{PYTHONPATH} ${PYTHONPATH})
-endif(PYTHONPATH)
+endif()
 
 set(success 1)
 
@@ -28,6 +28,6 @@ foreach(cmd ${COMMANDS})
     set(success 0)
     break()
   endif()
-endforeach(cmd)
+endforeach()
 
 file(WRITE ${OUTPUT} ${success})

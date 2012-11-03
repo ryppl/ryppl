@@ -8,7 +8,7 @@
 
 if(ASCIIDOC_EXECUTABLE)
   return()
-endif(ASCIIDOC_EXECUTABLE)
+endif()
 
 find_program(ASCIIDOC_EXECUTABLE
   NAMES
@@ -25,7 +25,7 @@ if(ASCIIDOC_EXECUTABLE)
   string(REGEX REPLACE "^asciidoc (.+)$" "\\1"
     ASCIIDOC_VERSION "${ASCIIDOC_VERSION}"
     )
-endif(ASCIIDOC_EXECUTABLE)
+endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(ASCIIDOC

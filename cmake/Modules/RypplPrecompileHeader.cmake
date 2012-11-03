@@ -20,7 +20,7 @@ function(ryppl_add_pch name source_list)
       get_filename_component(header ${header} ABSOLUTE)
       file(APPEND ${pch_header}.in "#include \"${header}\"\n")
     endif()
-  endforeach(header)
+  endforeach()
   configure_file(${pch_header}.in ${pch_header} COPYONLY)
 
   file(WRITE ${pch_source}.in "#include \"${pch_header}\"\n")
@@ -37,17 +37,17 @@ function(ryppl_add_pch name source_list)
       OBJECT_DEPENDS "${pch_binary}"
       )
     set(${source_list} ${pch_source} ${${source_list}} PARENT_SCOPE)
-  endif(MSVC_IDE)
+  endif()
   
   set(PCH_HEADER ${pch_header} PARENT_SCOPE)
-endfunction(ryppl_add_pch)
+endfunction()
 
 
 ##
 function(ryppl_add_pch_to_target target header)
   if(NOT header OR BOOST_DISABLE_PCH)
     return()
-  endif(NOT header OR BOOST_DISABLE_PCH)
+  endif()
 
   if(XCODE_VERSION)
     set_target_properties(${target} PROPERTIES
@@ -55,7 +55,7 @@ function(ryppl_add_pch_to_target target header)
       XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES"
       )
     return()
-  endif(XCODE_VERSION)
+  endif()
 
   if(CMAKE_COMPILER_IS_GNUCXX)
     string(TOUPPER "${CMAKE_BUILD_TYPE}" build_type)
@@ -64,12 +64,12 @@ function(ryppl_add_pch_to_target target header)
     get_target_property(target_type ${target} TYPE)
     if(${target_type} STREQUAL SHARED_LIBRARY)
       list(APPEND compile_flags "-fPIC")
-    endif(${target_type} STREQUAL SHARED_LIBRARY)
+    endif()
 
     get_directory_property(include_directories INCLUDE_DIRECTORIES)
     foreach(dir ${include_directories})
       list(APPEND compile_flags "-I${dir}")
-    endforeach(dir)
+    endforeach()
 
     get_directory_property(definitions DEFINITIONS)
     list(APPEND compile_flags ${definitions})
@@ -93,5 +93,5 @@ function(ryppl_add_pch_to_target target header)
     #add_dependencies(${target} ${pch_binary})
     add_custom_target(${target}-pch DEPENDS ${pch_binary})
     add_dependencies(${target} ${target}-pch)
-  endif(CMAKE_COMPILER_IS_GNUCXX)
-endfunction(ryppl_add_pch_to_target)
+  endif()
+endfunction()

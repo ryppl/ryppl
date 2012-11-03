@@ -11,7 +11,7 @@ include(detail/test_implementation)
 
 if(NOT TARGET test)
   add_custom_target(test)
-endif(NOT TARGET test)  
+endif()  
 
 # This function creates a suite of regression tests.
 #
@@ -62,9 +62,9 @@ function(ryppl_test_suite)
     set(suffix 2)
     while(TARGET ${target}${suffix})
       math(EXPR suffix "${suffix} + 1")
-    endwhile(TARGET ${target}${suffix})
+    endwhile()
     set(target ${target}${suffix})
-  endif(TARGET ${target})
+  endif()
 
   set(driver ${target}driver)
   set(TEST_FILES)
@@ -72,26 +72,26 @@ function(ryppl_test_suite)
   # COMPILE tests
   foreach(FILE ${TEST_COMPILE})
     __boost_add_test_compile(0)
-  endforeach(FILE)
+  endforeach()
   foreach(FILE ${TEST_COMPILE_FAIL})
     __boost_add_test_compile(1)
-  endforeach(FILE)
+  endforeach()
 
   # LINK tests
   foreach(FILE ${TEST_LINK})
     __boost_add_test_link("${CMAKE_CXX_LINK_EXECUTABLE}" 0)
-  endforeach(FILE)
+  endforeach()
   foreach(FILE ${TEST_LINK_FAIL})
     __boost_add_test_link("${CMAKE_CXX_LINK_EXECUTABLE}" 1)
-  endforeach(FILE)
+  endforeach()
 
   # MODULE tests
   foreach(FILE ${TEST_MODULE})
     __boost_add_test_link("${CMAKE_CXX_CREATE_SHARED_MODULE}" 0)
-  endforeach(FILE)
+  endforeach()
   foreach(FILE ${TEST_MODULE_FAIL})
     __boost_add_test_link("${CMAKE_CXX_CREATE_SHARED_MODULE}" 1)
-  endforeach(FILE)
+  endforeach()
 
   # RUN tests
   if(NOT TEST_NO_SINGLE_TARGET AND (TEST_RUN OR TEST_RUN_FAIL))
@@ -106,9 +106,9 @@ function(ryppl_test_suite)
         set_property(SOURCE "${file}" APPEND PROPERTY
           COMPILE_DEFINITIONS "main=${name}"
           )
-      endforeach(file)
+      endforeach()
       create_test_sourcelist(run_sources ${driver}.cpp ${run_sources})
-    endif(length GREATER 1)
+    endif()
     add_executable(${driver} EXCLUDE_FROM_ALL
       ${run_sources}
       ${TEST_ADDITIONAL_SOURCES}
@@ -118,30 +118,30 @@ function(ryppl_test_suite)
       )
     foreach(FILE ${TEST_RUN})
       __boost_add_test_run(${driver} 0)
-    endforeach(FILE)
+    endforeach()
     foreach(FILE ${TEST_RUN_FAIL})
       __boost_add_test_run(${driver} 1)
-    endforeach(FILE)
-  endif(NOT TEST_NO_SINGLE_TARGET AND (TEST_RUN OR TEST_RUN_FAIL))
+    endforeach()
+  endif()
 
   # deprecated RUN tests
   if(TEST_NO_SINGLE_TARGET AND (TEST_RUN OR TEST_RUN_FAIL))
     set(SUFFIX 0)
     foreach(FILE ${TEST_RUN})
       __boost_add_test_run_deprecated(${driver} 0)
-    endforeach(FILE)
+    endforeach()
     foreach(FILE ${TEST_RUN_FAIL})
       __boost_add_test_run_deprecated(${driver} 1)
-    endforeach(FILE)
-  endif(TEST_NO_SINGLE_TARGET AND (TEST_RUN OR TEST_RUN_FAIL))
+    endforeach()
+  endif()
 
   # PYTHON tests
   foreach(FILE ${TEST_PYTHON})
     __boost_add_test_python(0)
-  endforeach(FILE)
+  endforeach()
   foreach(FILE ${TEST_PYTHON_FAIL})
     __boost_add_test_python(1)
-  endforeach(FILE)
+  endforeach()
 
   # add the actual test target
   string(REPLACE ";" " " TEST_NAMES "${TEST_NAMES}")
@@ -152,4 +152,4 @@ function(ryppl_test_suite)
     DEPENDS ${TEST_FILES}
     )
   add_dependencies(test ${target})
-endfunction(ryppl_test_suite)
+endfunction()
