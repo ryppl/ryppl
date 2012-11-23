@@ -29,8 +29,7 @@ class Archive(object):
 
     def __init__(self, uri, source_subdir, revision):
         self.key = (uri, source_subdir, revision)
-        
-        self.subdir = 'boost-lib-' + source_subdir + '-' + revision[:7]
+        self.subdir = source_subdir + '-' + revision
 
         f = tempfile.NamedTemporaryFile(suffix='.zip')
         try:

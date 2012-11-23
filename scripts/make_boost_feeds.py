@@ -276,7 +276,7 @@ class GenerateBoost(object):
 
         def _git_snapshot(self, arch):
             git_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=self.srcdir).strip()
-            archive_uri = 'http://nodeload.github.com/boost-lib/' + self.repo + '/zipball/' + git_revision
+            archive_uri = 'http://github.com/boost-lib/' + self.repo + '/archive/' + git_revision + '.zip'
             zipball = Archive(archive_uri, self.repo, git_revision)
 
             impl = self._implementation(arch) [
