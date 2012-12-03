@@ -40,9 +40,10 @@ def generators():
     generator_block = help.split('The following generators are available on this platform:')[1]
     ret = []
     for line in generator_block.replace('\r\n','\n').split('\n'):
-        g = line.split('=')[0].strip()
-        if g:
-            ret.append(g)
+        if line.startswith('  ') and len(line) > 2 and not line.startswith('   '):
+            g = line.split('=')[0].strip()
+            if g:
+                ret.append(g)
     return ret
 
 if __name__ == '__main__':
