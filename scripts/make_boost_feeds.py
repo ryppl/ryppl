@@ -310,7 +310,8 @@ class GenerateBoost(object):
                 , [
                     _.requires(interface=self.cmake_package_to_feed_uri(cmake_package, 'src'))
                     for cmake_package in build_deps
-                    ]
+                    ] 
+                + [ _.requires(interface=ryppl_feed_uri('ryppl')) ]
                 , _.command(name='develop') [
                     _.runner(interface=ryppl_feed_uri('ryppl'))
                     , [
