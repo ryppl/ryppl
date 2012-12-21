@@ -29,77 +29,76 @@ import os
 github_url = functools.partial(urlparse.urljoin, 'https://api.github.com')
 bitbucket_url = functools.partial(urlparse.urljoin, 'https://api.bitbucket.org/1.0/')
 
-auth = 'Basic ' + sys.argv[1].encode('base64')
+src_auth = None
+if len(sys.argv) > 2:
+    src_auth = 'Basic ' + sys.argv[2].encode('base64')
 
-start_page = int( (sys.argv + ['1'])[2] )
+dst_auth = 'Basic ' + sys.argv[1].encode('base64')
+
 
 dst_repositories = set(
     repo['name'] for repo in 
     json.loads(
     restclient.GET(
         bitbucket_url('user/repositories/'),
-        headers=dict(Authorization=auth))
+        headers=dict(Authorization=dst_auth))
     )
     if repo['owner'] == 'ryppl'
 )
 
-for page in range(start_page, 1000):
+src_repositories = json.loads(
+    restclient.GET(
+        github_url('/orgs/boost-lib/repos'), 
+        headers=dict(Authorization=src_auth),
+        params=dict(per_page=1000)))
 
-    print '#### PAGE', page
+for src_repo in src_repositories:
+    clone_url = src_repo['clone_url']
+    repo_name = src_repo['name']
+    if repo_name in dst_repositories:
+        continue
 
-    src_repositories = json.loads(
-        restclient.GET(
-            github_url('/orgs/boost-lib/repos'), 
-            params=dict(page=page)))
+    print repo_name+':'
+    parent = tempdir.TempDir()
+    subprocess.check_call(
+        [ 'git', 'clone', '--quiet', '--mirror', clone_url ], cwd=parent)
+    print '  cloned'
 
-    for src_repo in src_repositories:
-        clone_url = src_repo['clone_url']
-        repo_name = src_repo['name']
+    post_result = restclient.POST(
+            bitbucket_url('repositories/'), 
+            headers=dict(Authorization=dst_auth),
+            async=False,
+            params=dict(
+                name=repo_name,
+                description=src_repo['description'],
+                language=src_repo['language'].lower() if src_repo['language'] else 'c++',
+                website=(src_repo['homepage'] or 'http://boost.org/libs/' + repo_name),
+                scm='git', 
+                is_private='false',
+                owner='ryppl'
+                ),
+            accept=['text/json']
+        )
 
-        if repo_name in dst_repositories:
-            continue
+    try:
+        json.loads(post_result)
+    except:
+        if not ' already has a repository with this name.' in post_result:
+            raise Exception, post_result
 
-        print repo_name+':'
-        parent = tempdir.TempDir()
-        subprocess.check_call(
-            [ 'git', 'clone', '--quiet', '--mirror', clone_url ], cwd=parent)
-        print '  cloned'
+    print '  created'
 
-        post_result = restclient.POST(
-                bitbucket_url('repositories/'), 
-                headers=dict(Authorization=auth),
-                async=False,
-                params=dict(
-                    name=repo_name,
-                    description=src_repo['description'],
-                    language=src_repo['language'].lower() if src_repo['language'] else 'c++',
-                    website=(src_repo['homepage'] or 'http://boost.org/libs/' + repo_name),
-                    scm='git', 
-                    is_private='false',
-                    owner='ryppl'
-                    ),
-                accept=['text/json']
-            )
+    repo_dotgit = repo_name + '.git'
 
-        try:
-            json.loads(post_result)
-        except:
-            if not ' already has a repository with this name.' in post_result:
-                raise Exception, post_result
+    subprocess.check_call(
+        [ 'git', 'remote', 'add', 'bitbucket', 'git@bitbucket.org:ryppl/' + repo_dotgit],
+        cwd=os.path.join(parent, repo_dotgit)
+        )
 
-        print '  created'
-
-        repo_dotgit = repo_name + '.git'
-
-        subprocess.check_call(
-            [ 'git', 'remote', 'add', 'bitbucket', 'git@bitbucket.org:ryppl/' + repo_dotgit],
-            cwd=os.path.join(parent, repo_dotgit)
-            )
-
-        subprocess.check_call(
-            [ 'git', 'push', '--quiet', '--mirror', 'bitbucket'],
-            cwd=os.path.join(parent, repo_dotgit)
-            )
-        print '  pushed'
-        since = src_repo['id']
+    subprocess.check_call(
+        [ 'git', 'push', '--quiet', '--mirror', 'bitbucket'],
+        cwd=os.path.join(parent, repo_dotgit)
+        )
+    print '  pushed'
+    since = src_repo['id']
 
