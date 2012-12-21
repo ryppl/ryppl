@@ -62,7 +62,7 @@ for page in range(start_page, 1000):
                     language=src_repo['language'].lower(),
                     website=src_repo['homepage'],
                     scm='git', 
-                    is_private=True,
+                    is_private='false',
                     owner='ryppl'
                     ),
                 accept=['text/json']
