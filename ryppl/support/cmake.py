@@ -12,9 +12,14 @@ cmake_2_8_10_plus = (
 
 command = _zeroinstall.launch_command + cmake_2_8_10_plus
 
+def environ():
+    ret = dict(os.environ)
+    ret.pop('MACOSX_DEPLOYMENT_TARGET',None)
+    return ret
+
 def cmake(args, **kw):
     info('cmake-2.8.10+ %s', args)
-    return _zeroinstall.launch(cmake_2_8_10_plus+tuple(args), **kw)
+    return _zeroinstall.launch(cmake_2_8_10_plus+tuple(args), env=environ(), **kw)
 
 def configure_for_circular_dependencies(*args, **kw):
     info('CMake first pass')
@@ -23,6 +28,7 @@ def configure_for_circular_dependencies(*args, **kw):
         cmd,
         stdout=open(os.devnull,'w'), 
         stderr=subprocess.PIPE, 
+        env = environ(),
         **kw)
     stderr = p.communicate()[1]
     if p.wait() == 0 or 'Initial pass successfully completed, now run again!' not in stderr:
@@ -35,7 +41,7 @@ def configure_for_circular_dependencies(*args, **kw):
     cmake(args, **kw)
 
 def generators():
-    help = subprocess.check_output(command + ('--help',))
+    help = subprocess.check_output(command + ('--help',), env=environ())
 
     generator_block = help.split('The following generators are available on this platform:')[1]
     ret = []
