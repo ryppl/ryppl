@@ -138,14 +138,6 @@ def prepare_src(src, args, selections, config):
     top_cmakelists_txt = open(curdir/'CMakeLists.txt','w')
     dep_cmakelists_txt = open(dependency_subdir/'CMakeLists.txt','w')
 
-    # This is probably an evil hack; we should find a way to get ryppl
-    # to be treated as just another dependency.  Right now, however,
-    # it's not showing up in the selection, presumably because it's
-    # already in the system at that point.
-    check_call([_git, 'submodule', 'add', 
-                'http://github.com/ryppl/ryppl.git', 
-                (dependency_subdir/'ryppl').replace('\\','/')])
-
     for f in (top_cmakelists_txt, dep_cmakelists_txt): 
         f.write(cmakelists_head)
     
@@ -168,9 +160,7 @@ set(RYPPL_INITIAL_PASS TRUE CACHE BOOL "")
         requested = uri in args.feed
         parent_dir = Path(curdir if requested else dependency_subdir)
 
-        print '    ', uri
         if feed.implementations.get(sel.id):
-            print '      ', sel.attrs['version']
             submodule = git_add_feed_submodule(
                 feed
                 , sel.attrs['version']
