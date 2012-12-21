@@ -60,7 +60,7 @@ for page in range(start_page, 1000):
                     name=repo_name,
                     description=src_repo['description'],
                     language=src_repo['language'].lower(),
-                    website=src_repo['homepage'],
+                    website=(src_repo['homepage'] or 'http://boost.org/libs/' + repo_name),
                     scm='git', 
                     is_private='false',
                     owner='ryppl'
