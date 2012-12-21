@@ -6,15 +6,15 @@ from logging import info
 import subprocess
 import os
 
-cmake_2_8_8_plus = (
-    '--not-before=2.8.8'
+cmake_2_8_10_plus = (
+    '--not-before=2.8.10'
     , 'http://ryppl.github.com/feeds/cmake.xml')
 
-command = _zeroinstall.launch_command + cmake_2_8_8_plus
+command = _zeroinstall.launch_command + cmake_2_8_10_plus
 
 def cmake(args, **kw):
-    info('cmake-2.8.8+ %s', args)
-    return _zeroinstall.launch(cmake_2_8_8_plus+tuple(args), **kw)
+    info('cmake-2.8.10+ %s', args)
+    return _zeroinstall.launch(cmake_2_8_10_plus+tuple(args), **kw)
 
 def configure_for_circular_dependencies(*args, **kw):
     info('CMake first pass')
