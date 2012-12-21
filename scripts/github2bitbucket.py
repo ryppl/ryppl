@@ -33,18 +33,31 @@ auth = 'Basic ' + sys.argv[1].encode('base64')
 
 start_page = int( (sys.argv + ['1'])[2] )
 
+dst_repositories = set(
+    repo['name'] for repo in 
+    json.loads(
+    restclient.GET(
+        bitbucket_url('user/repositories/'),
+        headers=dict(Authorization=auth))
+    )
+    if repo['owner'] == 'ryppl'
+)
+
 for page in range(start_page, 1000):
 
     print '#### PAGE', page
 
-    repositories = json.loads(
+    src_repositories = json.loads(
         restclient.GET(
             github_url('/orgs/boost-lib/repos'), 
             params=dict(page=page)))
 
-    for src_repo in repositories:
+    for src_repo in src_repositories:
         clone_url = src_repo['clone_url']
         repo_name = src_repo['name']
+
+        if repo_name in dst_repositories:
+            continue
 
         print repo_name+':'
         parent = tempdir.TempDir()
