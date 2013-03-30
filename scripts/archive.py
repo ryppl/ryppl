@@ -51,7 +51,7 @@ class Archive(object):
 
 if __name__ == '__main__':
     key = (
-        'http://nodeload.github.com/boost-lib/timer/zipball/2a05e6539be22c036f16d069af7f40ae1e120c18'
+        'http://nodeload.github.com/boostorg/timer/zipball/2a05e6539be22c036f16d069af7f40ae1e120c18'
       , 'timer'
       , '2a05e6539be22c036f16d069af7f40ae1e120c18')
 

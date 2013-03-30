@@ -43,12 +43,12 @@ dst_repositories = set(
         bitbucket_url('user/repositories/'),
         headers=dict(Authorization=dst_auth))
     )
-    if repo['owner'] == 'ryppl'
+    if repo['owner'] == 'boostorg'
 )
 
 src_repositories = json.loads(
     restclient.GET(
-        github_url('/orgs/boost-lib/repos'), 
+        github_url('/orgs/boostorg/repos'), 
         headers=dict(Authorization=src_auth),
         params=dict(per_page=1000)))
 
@@ -75,7 +75,7 @@ for src_repo in src_repositories:
                 website=(src_repo['homepage'] or 'http://boost.org/libs/' + repo_name),
                 scm='git', 
                 is_private='false',
-                owner='ryppl'
+                owner='boostorg'
                 ),
             accept=['text/json']
         )
@@ -91,7 +91,7 @@ for src_repo in src_repositories:
     repo_dotgit = repo_name + '.git'
 
     subprocess.check_call(
-        [ 'git', 'remote', 'add', 'bitbucket', 'git@bitbucket.org:ryppl/' + repo_dotgit],
+        [ 'git', 'remote', 'add', 'bitbucket', 'git@bitbucket.org:boostorg/' + repo_dotgit],
         cwd=os.path.join(parent, repo_dotgit)
         )
 

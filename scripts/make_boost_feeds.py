@@ -265,7 +265,7 @@ class GenerateBoost(object):
                 _.name['%s (%s)' % (self.brand_name, self._human_component[component])]
               , boost_icon
               , _('ryppl:vcs-repository')(
-                    type="git", href='http://github.com/boost-lib/%s.git' % self.repo)
+                    type="git", href='http://github.com/boostorg/%s.git' % self.repo)
               ]
 
             # These tags can be dragged directly across from our lib_metadata
@@ -276,7 +276,7 @@ class GenerateBoost(object):
 
         def _git_snapshot(self, arch):
             git_revision = check_output(['git', 'rev-parse', 'HEAD'], cwd=self.srcdir).strip()
-            archive_uri = 'http://github.com/boost-lib/' + self.repo + '/archive/' + git_revision + '.zip'
+            archive_uri = 'http://github.com/boostorg/' + self.repo + '/archive/' + git_revision + '.zip'
             zipball = Archive(archive_uri, self.repo, git_revision)
 
             impl = self._implementation(arch) [
